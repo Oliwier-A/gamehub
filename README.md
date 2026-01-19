@@ -65,10 +65,10 @@ Aby uruchomić projekt lokalnie, potrzebujesz:
 ## Domyślne Dane Logowania Admina
 
 Podczas pierwszego uruchomienia aplikacja sprawdza istnienie konta administratora. Jeśli nie istnieje, zostanie utworzone automatycznie:
+(Dane te można zmienić po zalogowaniu w panelu uzytkownika lub przez Program.cs)
 
 * **Login:** `Admin`
 * **Hasło:** `Admin890`
 
-(Dane te można zmienić po zalogowaniu w panelu uzytkownika lub przez Program.cs).
 ---
 Autorzy: **Oliwier Ancutko** i **Patrycja Chocko**
