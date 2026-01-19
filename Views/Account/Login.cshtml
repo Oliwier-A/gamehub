@@ -1,0 +1,77 @@
+﻿@using praca_dyplomowa_zesp.Models.Modules.Users
+@using praca_dyplomowa_zesp.Models.ViewModels.Users
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Zaloguj się";
+}
+
+<div class="container auth-wrapper">
+    <div class="row justify-content-center w-100">
+        <div class="col-md-7 col-lg-6 col-xl-5">
+
+            <div class="card auth-card">
+                <div class="card-body p-4 p-sm-5">
+
+                    <h2 class="text-neon-title">Logowanie</h2>
+
+                    <form asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
+
+                        <div class="form-floating mb-4">
+                            <input asp-for="Login" class="form-control form-control-tech" placeholder="Login" required />
+                            <label asp-for="Login">Login</label>
+                            <span asp-validation-for="Login" class="text-danger small mt-1 d-block"></span>
+                        </div>
+
+                        <div class="form-floating mb-4">
+                            <input asp-for="Password" class="form-control form-control-tech" type="password" placeholder="Hasło" required />
+                            <label asp-for="Password">Hasło</label>
+                            <span asp-validation-for="Password" class="text-danger small mt-1 d-block"></span>
+                        </div>
+
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" asp-for="RememberMe" />
+                            <label class="form-check-label text-muted small pt-1" asp-for="RememberMe">
+                                Zapamiętaj mnie
+                            </label>
+                        </div>
+
+                        <div class="d-grid mb-4">
+                            <button type="submit" class="btn btn-neon-green">
+                                Zaloguj się
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="text-center text-muted small mb-3" style="letter-spacing: 2px;">LUB</div>
+
+                    <form asp-controller="Account" asp-action="LoginWithSteam" method="post" class="d-grid mb-2">
+                        <button type="submit" class="btn btn-steam-connect justify-content-center gap-2">
+                            <i class="bi bi-steam fs-5"></i>
+                            <span>Zaloguj przez Steam</span>
+                        </button>
+                    </form>
+
+                    <div class="text-center mb-4">
+                        <p class="text-muted" style="font-size: 0.7rem; line-height: 1.2; opacity: 0.8;">
+                            This site is not associated with Valve Corporation.<br />
+                            Steam and the Steam logo are trademarks of Valve Corporation.
+                        </p>
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <p class="text-muted small mb-1">Brak konta?</p>
+                        <a asp-action="Register" asp-route-returnUrl="@ViewData["ReturnUrl"]" class="btn btn-low-tier fw-bold" style="color: #fff;">
+                            ZAREJESTRUJ SIĘ TERAZ
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

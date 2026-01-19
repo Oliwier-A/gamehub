@@ -1,0 +1,114 @@
+﻿@model IEnumerable<praca_dyplomowa_zesp.Models.Ticket>
+
+@{
+    ViewData["Title"] = "Moje Zgłoszenia";
+}
+
+<div class="container mt-4 main-container fade-in-up">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-neon-title text-start mb-0" style="font-size: 2rem;">MOJE ZGŁOSZENIA</h2>
+            <p class="text-muted small mb-0">Centrum komunikacji z administracją</p>
+        </div>
+        <a asp-action="Create" class="btn btn-neon-primary px-4 fw-bold">
+            <i class="fas fa-plus-circle me-2"></i> NOWE ZGŁOSZENIE
+        </a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="glass-panel text-center p-5 d-flex flex-column align-items-center justify-content-center" style="min-height: 300px;">
+            <i class="fas fa-inbox mb-4 text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+            <h4 class="text-white text-uppercase letter-spacing-2">Brak zgłoszeń</h4>
+            <p class="text-muted">Nie masz jeszcze żadnych aktywnych spraw w systemie.</p>
+            <a asp-action="Create" class="btn btn-ghost-cancel border border-secondary mt-3">
+                <i class="fas fa-plus me-2"></i> Utwórz pierwsze
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-12">
+                @foreach (var item in Model)
+                {
+                    //dynamiczne mapowanie stylów i ikon na podstawie stanu zgłoszenia
+                    string statusColorVar = "var(--text-muted)";
+                    string statusIcon = "fa-circle";
+                    string statusLabel = "Nieznany";
+
+                    switch (item.Status)
+                    {
+                        case praca_dyplomowa_zesp.Models.TicketStatus.Oczekujące:
+                            statusColorVar = "var(--neon-green)";
+                            statusIcon = "fa-clock";
+                            statusLabel = "OCZEKUJĄCE";
+                            break;
+                        case praca_dyplomowa_zesp.Models.TicketStatus.W_trakcie:
+                            statusColorVar = "var(--neon-yellow)";
+                            statusIcon = "fa-tools";
+                            statusLabel = "W TRAKCIE";
+                            break;
+                        case praca_dyplomowa_zesp.Models.TicketStatus.Zamknięte:
+                            statusColorVar = "var(--border-tech)";
+                            statusIcon = "fa-check-circle";
+                            statusLabel = "ZAMKNIĘTE";
+                            break;
+                    }
+
+                    <div class="achievement-row p-3 mb-3 d-flex align-items-center justify-content-between position-relative overflow-hidden"
+                         style="border-left: 4px solid @statusColorVar; background-color: var(--bg-panel);">
+
+                        <div class="d-flex align-items-center gap-3">
+
+                            <div class="d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: rgba(0,0,0,0.3); border-radius: 50%; color: @statusColorVar;">
+                                <i class="fas @statusIcon fs-5"></i>
+                            </div>
+
+                            <div class="d-flex flex-column">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fs-5 fw-bold text-white">@item.Title</span>
+
+                                    <span class="badge border bg-transparent"
+                                          style="border-color: @statusColorVar !important; color: @statusColorVar !important; font-size: 0.65rem;">
+                                        @statusLabel
+                                    </span>
+
+                                    @* wizualne wyróżnienie zgłoszeń z nową odpowiedzią od administracji *@
+                                    @if (item.HasUnreadResponse)
+                                    {
+                                        <span class="badge border bg-transparent ms-2"
+                                              style="border-color: var(--neon-red) !important; color: var(--neon-red) !important; font-size: 0.65rem;"
+                                              title="Nowa odpowiedź!">
+                                            <i class="fas fa-envelope me-1"></i> NOWA WIADOMOŚĆ
+                                        </span>
+                                    }
+                                </div>
+                                <div class="text-muted small">
+                                    <i class="far fa-calendar-alt me-1"></i> Utworzono: @item.CreatedAt.ToString("dd.MM.yyyy, HH:mm")
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-ghost-cancel border border-secondary text-white-50">
+                                SZCZEGÓŁY <i class="fas fa-chevron-right ms-2"></i>
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<script>
+    //inicjalizacja systemowych tooltipów Bootstrapa dla wszystkich elementów z atrybutem title
+    document.addEventListener("DOMContentLoaded", function() {
+        var popoverTriggerList = [].slice.call(document.querySelectorAll('[title]'))
+        var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+            return new bootstrap.Tooltip(popoverTriggerEl)
+        })
+    });
+</script>

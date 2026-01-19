@@ -1,0 +1,203 @@
+﻿@using praca_dyplomowa_zesp.Models.ViewModels.Games
+@model GameBrowserViewModel
+@{
+    ViewData["Title"] = Model.Mode == "guides" ? "Baza Poradników" : "Przeglądaj Gry"; //dynamiczne ustawianie tytulu strony w zaleznosci od trybu
+}
+
+<div class="container-fluid px-4 pt-4 main-container fade-in-up">
+
+    <div class="mb-4">
+        <h1 class="browse-title">@ViewData["Title"]</h1>
+        @if (Model.Mode == "guides")
+        {
+            <p class="browse-subtitle">Wybierz grę, aby znaleźć pomoc lub podzielić się wiedzą.</p>
+        }
+        else
+        {
+            <p class="browse-subtitle">Odkryj nowe tytuły i dodaj je do swojej kolekcji.</p>
+        }
+    </div>
+
+    @* --- PANEL FILTRÓW --- *@
+    <div class="glass-panel mb-4 filter-container">
+        <form asp-action="Index" method="get" class="row g-3 align-items-center justify-content-center">
+            <input type="hidden" name="mode" value="@Model.Mode" />
+
+            <div class="@(Model.Mode == "guides" ? "col-md-8" : "col-md-5")">
+                @* dostosowanie szerokosci wyszukiwarki do trybu *@
+                <div class="admin-search-merged mb-0 w-100">
+                    <div class="admin-search-merged-inner">
+                        <div class="form-floating flex-grow-1 h-100">
+                            <input type="text" name="searchString" class="form-control h-100 border-0 bg-transparent text-white"
+                                   placeholder="@(Model.Mode == "guides" ? "Wpisz tytuł gry..." : "Szukaj gry w bazie...")"
+                                   value="@Model.SearchString" style="box-shadow: none;">
+                            <label>@(Model.Mode == "guides" ? "Szukaj poradnika do gry..." : "Szukaj gry...")</label>
+                        </div>
+                        <button type="submit" class="btn-search-integrated h-100">
+                            <i class="bi bi-search fs-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.Mode == "browse") @* filtry dostepne tylko w trybie przegladania bazy gier *@
+            {
+                <input type="hidden" name="isFiltered" value="true" />
+
+                <div class="col-md-7">
+                    <div class="d-flex gap-4 justify-content-md-end align-items-center flex-wrap h-100">
+                        <span class="text-muted small text-uppercase fw-bold" style="opacity: 0.7; letter-spacing: 1px;">Źródło oceny:</span>
+
+                        <div class="form-check form-switch form-switch-custom switch-cyan d-flex align-items-center gap-2 mb-0">
+                            <input class="form-check-input" type="checkbox" id="checkCritic" name="showCritic" value="true" @(Model.ShowIgdbCritic ? "checked" : "") onchange="this.form.submit()">
+                            <label class="form-check-label" for="checkCritic">Krytycy</label>
+                        </div>
+
+                        <div class="form-check form-switch form-switch-custom switch-green d-flex align-items-center gap-2 mb-0">
+                            <input class="form-check-input" type="checkbox" id="checkUser" name="showUser" value="true" @(Model.ShowIgdbUser ? "checked" : "") onchange="this.form.submit()">
+                            <label class="form-check-label" for="checkUser">IGDB</label>
+                        </div>
+
+                        <div class="form-check form-switch form-switch-custom switch-purple d-flex align-items-center gap-2 mb-0">
+                            <input class="form-check-input" type="checkbox" id="checkLocal" name="showLocal" value="true" @(Model.ShowLocal ? "checked" : "") onchange="this.form.submit()">
+                            <label class="form-check-label" for="checkLocal">GameHub</label>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <input type="hidden" name="page" value="1" />
+        </form>
+    </div>
+
+    @* --- LISTA GIER --- *@
+    <div class="row g-4" style="position: relative; z-index: 1;">
+        @if (Model.Games.Any())
+        {
+            @foreach (var game in Model.Games)
+            {
+                <div class="col-6 col-md-3 col-xl-2">
+                    <a asp-controller="@(Model.Mode == "guides" ? "Guides" : "Games")"
+                       asp-action="@(Model.Mode == "guides" ? "Index" : "Details")"
+                       asp-route-gameId="@(Model.Mode == "guides" ? game.Id : null)"
+                       asp-route-id="@(Model.Mode != "guides" ? game.Id : null)"
+                       class="text-decoration-none game-link-wrapper d-block h-100">
+                        @* przekierowanie do odpowiedniego kontrolera w zaleznosci od trybu *@
+
+                        @RenderGameCard(game)
+                    </a>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="glass-panel text-center py-5">
+                    <i class="bi bi-controller display-1 mb-3 d-block text-neon-purple" style="opacity: 0.2;"></i>
+                    <h4 class="text-white">Nic nie znaleziono</h4>
+                    <p class="text-muted">Spróbuj zmienić filtry lub wpisać inną nazwę.</p>
+                </div>
+            </div>
+        }
+    </div>
+
+    @* --- PAGINACJA --- *@
+    <div class="mt-5 mb-5">
+        @{
+            int pageSize = 60;
+            if (Context.Request.Query.ContainsKey("pageSize"))
+            {
+                int.TryParse(Context.Request.Query["pageSize"], out pageSize); //pobranie wybranego limitu elementow na strone
+            }
+
+            var prevDisabled = Model.CurrentPage > 1 ? "" : "disabled";
+            var nextDisabled = Model.Games.Count < pageSize ? "disabled" : "";
+
+            string GetPageUrl(int pageNum) => Url.Action("Index", new
+            {
+                page = pageNum,
+                pageSize = pageSize,
+                searchString = Model.SearchString,
+                mode = Model.Mode,
+                isFiltered = true,
+                showUser = Model.ShowIgdbUser,
+                showCritic = Model.ShowIgdbCritic,
+                showLocal = Model.ShowLocal
+            }); //funkcja pomocnicza do budowania adresow stron z zachowaniem filtrow
+
+            string GetUrlWithLimit(int newLimit) => Url.Action("Index", new
+            {
+                page = 1,
+                pageSize = newLimit,
+                searchString = Model.SearchString,
+                mode = Model.Mode,
+                isFiltered = true,
+                showUser = Model.ShowIgdbUser,
+                showCritic = Model.ShowIgdbCritic,
+                showLocal = Model.ShowLocal
+            }); //funkcja do zmiany liczby wyswietlanych gier na strone
+        }
+
+        <div class="d-flex justify-content-center align-items-center mb-3 gap-2">
+            <span class="text-muted small text-uppercase" style="font-size: 0.7rem; letter-spacing: 1px;">Na stronie:</span>
+            <div class="btn-group" role="group">
+                <a href="@GetUrlWithLimit(36)" class="btn btn-sm @(pageSize == 36 ? "btn-neon-purple" : "btn-low-tier")" style="min-width: 40px;">36</a>
+                <a href="@GetUrlWithLimit(48)" class="btn btn-sm @(pageSize == 48 ? "btn-neon-purple" : "btn-low-tier")" style="min-width: 40px;">48</a>
+                <a href="@GetUrlWithLimit(60)" class="btn btn-sm @(pageSize == 60 ? "btn-neon-purple" : "btn-low-tier")" style="min-width: 40px;">60</a>
+            </div>
+        </div>
+
+        @if (Model.Games.Any())
+        {
+            <nav aria-label="Paginacja">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item @prevDisabled">
+                        <a class="page-link" href="@GetPageUrl(Model.CurrentPage - 1)" tabindex="-1" aria-disabled="@(prevDisabled == "disabled" ? "true" : "false")">
+                            <i class="bi bi-chevron-left me-1"></i> Poprzednia
+                        </a>
+                    </li>
+
+                    <li class="page-item active">
+                        <span class="page-link">@Model.CurrentPage</span>
+                    </li>
+
+                    <li class="page-item @nextDisabled">
+                        <a class="page-link" href="@GetPageUrl(Model.CurrentPage + 1)" tabindex="-1" aria-disabled="@(nextDisabled == "disabled" ? "true" : "false")">
+                            Następna <i class="bi bi-chevron-right ms-1"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        }
+    </div>
+</div>
+
+@{
+    Microsoft.AspNetCore.Html.IHtmlContent RenderGameCard(dynamic game) //lokalna funkcja do renderowania karty gry
+    {
+        <div class="card-game">
+            <div class="cover-container">
+                <img src="@(game.Cover?.Url ?? "https://via.placeholder.com/264x352.png?text=Brak+Okładki")"
+                     class="cover-img"
+                     alt="@game.Name">
+
+                @if (Model.Mode != "guides" && game.Total_rating != null && game.Total_rating > 0) //wyswietlanie plakietki z ocena ogolna gry
+                {
+                    double rating = (double)game.Total_rating;
+                    string badgeClass = rating >= 75 ? "rating-high" : (rating >= 50 ? "rating-mid" : "rating-low");
+
+                    <div class="rating-badge @badgeClass">
+                        @rating.ToString("0")
+                    </div>
+                }
+            </div>
+
+            <div class="game-card-body p-2 text-center">
+                <div class="game-title-text" title="@game.Name">
+                    @game.Name
+                </div>
+            </div>
+        </div>
+        return Html.Raw("");
+    }
+}

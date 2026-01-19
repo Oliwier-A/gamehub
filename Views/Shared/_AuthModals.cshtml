@@ -1,0 +1,165 @@
+﻿@using praca_dyplomowa_zesp.Models
+
+<div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+    @* kontener modala logowania *@
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-neon">
+            <div class="modal-header border-bottom-0 pb-0">
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 p-sm-5 pt-0">
+
+                <h2 class="text-neon-title mb-4">Logowanie</h2>
+
+                <form asp-controller="Account" asp-action="Login" method="post">
+                    @* formularz logowania uzytkownika *@
+                    <input type="hidden" name="returnUrl" class="current-url-input" /> @* przekazywanie biezacego adresu do przekierowania *@
+
+                    <div class="form-floating mb-3">
+                        <input name="Login" type="text" class="form-control form-control-tech" placeholder="Login" required />
+                        <label>Login</label>
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <input name="Password" type="password" class="form-control form-control-tech" placeholder="Hasło" required />
+                        <label>Hasło</label>
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" name="RememberMe" value="true" id="loginRememberMe" />
+                        <label class="form-check-label text-muted small pt-1" for="loginRememberMe">
+                            Zapamiętaj mnie
+                        </label>
+                    </div>
+
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-neon-green btn-lg">
+                            Zaloguj się
+                        </button>
+                    </div>
+                </form>
+
+                <div class="auth-separator">LUB</div>
+
+                <form asp-controller="Account" asp-action="LoginWithSteam" method="post" class="d-grid mb-2">
+                    @* przycisk logowania przez steam *@
+                    <input type="hidden" name="returnUrl" class="current-url-input" />
+                    <button type="submit" class="btn btn-steam-connect btn-lg justify-content-center gap-2">
+                        <i class="bi bi-steam fs-5"></i>
+                        <span>Zaloguj przez Steam</span>
+                    </button>
+                </form>
+
+                <div class="text-center mb-3">
+                    <p class="text-muted" style="font-size: 0.65rem; line-height: 1.1; opacity: 0.7;">
+                        This site is not associated with Valve Corporation. Steam and the Steam logo are trademarks of Valve Corporation.
+                    </p>
+                </div>
+
+                <div class="text-center mt-3">
+                    <p class="text-muted small mb-1">Brak konta?</p>
+                    <a href="#" onclick="switchToRegister()" class="btn btn-low-tier fw-bold" style="color: #fff;">
+                        ZAREJESTRUJ SIĘ TERAZ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="registerModal" tabindex="-1" aria-hidden="true">
+    @* kontener modala rejestracji *@
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-neon">
+            <div class="modal-header border-bottom-0 pb-0">
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 p-sm-5 pt-0">
+
+                <h2 class="text-neon-title mb-4">Rejestracja</h2>
+
+                <form asp-controller="Account" asp-action="Register" method="post">
+                    @* formularz zakladania nowego konta *@
+                    <input type="hidden" name="returnUrl" class="current-url-input" />
+
+                    <div class="form-floating mb-3">
+                        <input name="Login" type="text" class="form-control form-control-tech" placeholder="Login" required />
+                        <label>Login (ID)</label>
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <input name="UserName" type="text" class="form-control form-control-tech" placeholder="Nick" required />
+                        <label>Nazwa gracza</label>
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <input name="Password" type="password" class="form-control form-control-tech" placeholder="Hasło" required />
+                        <label>Hasło</label>
+                    </div>
+
+                    <div class="form-floating mb-4">
+                        <input name="ConfirmPassword" type="password" class="form-control form-control-tech" placeholder="Powtórz hasło" required />
+                        <label>Powtórz hasło</label>
+                    </div>
+
+                    <div class="d-grid mb-4">
+                        <button type="submit" class="btn btn-neon-green btn-lg">
+                            Stwórz konto
+                        </button>
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <p class="text-muted small mb-1">Masz już ID?</p>
+                        <a href="#" onclick="switchToLogin()" class="btn btn-low-tier fw-bold" style="color: #fff;">
+                            ZALOGUJ SIĘ TUTAJ
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openAuthModal(modalType) { @* logika przelaczania miedzy modalem logowania i rejestracji *@
+        var loginModalEl = document.getElementById('loginModal');
+        var registerModalEl = document.getElementById('registerModal');
+
+        var loginInstance = bootstrap.Modal.getInstance(loginModalEl);
+        var registerInstance = bootstrap.Modal.getInstance(registerModalEl);
+
+        if (modalType === 'login') {
+            if (registerInstance && registerModalEl.classList.contains('show')) {
+                registerInstance.hide();
+                setTimeout(function() {
+                    new bootstrap.Modal(loginModalEl).show();
+                }, 300);
+            } else {
+                if (!loginInstance || !loginModalEl.classList.contains('show')) {
+                    new bootstrap.Modal(loginModalEl).show();
+                }
+            }
+        }
+        else if (modalType === 'register') {
+            if (loginInstance && loginModalEl.classList.contains('show')) {
+                loginInstance.hide();
+                setTimeout(function() {
+                    new bootstrap.Modal(registerModalEl).show();
+                }, 300);
+            } else {
+                if (!registerInstance || !registerModalEl.classList.contains('show')) {
+                    new bootstrap.Modal(registerModalEl).show();
+                }
+            }
+        }
+    }
+
+    function switchToRegister() { openAuthModal('register'); }
+    function switchToLogin() { openAuthModal('login'); }
+
+    document.addEventListener("DOMContentLoaded", function() { @* automatyczne ustawianie adresu powrotnego po zaladowaniu dom *@
+        var currentUrl = window.location.pathname + window.location.search;
+        var inputs = document.querySelectorAll('.current-url-input');
+        inputs.forEach(function(input) { input.value = currentUrl; });
+    });
+</script>

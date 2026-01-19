@@ -1,0 +1,289 @@
+﻿@model praca_dyplomowa_zesp.Models.ViewModels.Users.ProfileViewModel
+@using praca_dyplomowa_zesp.Models
+
+@{
+    ViewData["Title"] = "Mój Profil"; //ustawienie tytulu strony
+
+    // --- LOGIKA KOLORÓW RANGI ---
+    bool isAdmin = User.IsInRole("Admin"); //sprawdzenie czy uzytkownik jest administratorem
+    bool isMod = User.IsInRole("Moderator"); //sprawdzenie czy uzytkownik jest moderatorem
+
+    string roleColor = "var(--neon-cyan)";
+    string roleName = "Użytkownik";
+    string roleIcon = "bi-person";
+
+    if (isAdmin) //przypisanie stylu dla administratora
+    {
+        roleColor = "var(--neon-red)";
+        roleName = "Administrator";
+        roleIcon = "bi-shield-lock-fill";
+    }
+    else if (isMod) //przypisanie stylu dla moderatora
+    {
+        roleColor = "var(--neon-green)";
+        roleName = "Moderator";
+        roleIcon = "bi-shield-check";
+    }
+}
+
+<div class="container py-5 profile-container" style="--role-color: @roleColor;">
+    @* przekazanie koloru rangi do css *@
+
+    <div class="mb-5 fade-in-up">
+        <h1 class="browse-title">@ViewData["Title"]</h1>
+        <p class="browse-subtitle">Zarządzaj swoim kontem, integracjami i bezpieczeństwem.</p>
+    </div>
+
+    <div class="row g-4 align-items-start fade-in-up" style="animation-delay: 0.1s;">
+
+        @* LEWA KOLUMNA: INFORMACJE PODSTAWOWE *@
+        <div class="col-lg-4">
+            <div class="profile-sidebar-card text-center pb-4">
+
+                <div class="avatar-container">
+                    @* sekcja wyswietlania awatara *@
+                    <img src="@Url.Action("GetAvatar", "Profile", new { id = Model.UserId, v = DateTime.Now.Ticks })"
+                         alt="Avatar"
+                         class="profile-avatar" />
+
+                    <button class="btn-edit-avatar"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#avatarUploadCollapse"
+                            title="Zmień awatar">
+                        <i class="bi bi-pencil-fill"></i>
+                    </button>
+                </div>
+
+                <h3 class="text-white mb-1">@Model.Username</h3>
+
+                <div class="role-badge" style="color: @roleColor !important; border-color: @roleColor !important;">
+                    @* plakietka z ranga uzytkownika *@
+                    <i class="@roleIcon me-2"></i>@roleName
+                </div>
+
+                <div class="collapse px-4 mt-3" id="avatarUploadCollapse">
+                    @* formularz zmiany awatara *@
+                    <div class="p-3 rounded" style="background: rgba(255,255,255,0.05); border: 1px dashed var(--role-color);">
+                        <form asp-action="ChangeAvatar" method="post" enctype="multipart/form-data">
+                            <label class="form-label small text-muted mb-2">Wybierz obraz (JPG/PNG)</label>
+
+                            <input type="file" name="avatarFile"
+                                   class="form-control form-control-sm form-control-tech mb-3"
+                                   style="border-color: var(--role-color); box-shadow: none !important;"
+                                   accept="image/png, image/jpeg, image/jpg, image/gif"
+                                   required />
+
+                            <button type="submit" class="btn btn-sm btn-save-custom">
+                                <i class="bi bi-upload me-1"></i> ZAPISZ
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        @* PRAWA KOLUMNA: USTAWIENIA *@
+        <div class="col-lg-8">
+
+            @* 1. INTEGRACJA STEAM *@
+            <div class="steam-card">
+                <div class="steam-header d-flex justify-content-between align-items-center">
+                    <span>
+                        <i class="bi bi-steam me-2"></i> Integracja Steam
+                    </span>
+                    @if (!string.IsNullOrEmpty(Model.SteamId)) //sprawdzenie czy konto steam jest podpiete
+                    {
+                        <span class="badge bg-transparent border border-info text-info rounded-pill" style="box-shadow: 0 0 10px rgba(13,202,240,0.3);">
+                            POŁĄCZONO
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-transparent border border-secondary text-muted rounded-pill">
+                            NIEPOŁĄCZONO
+                        </span>
+                    }
+                </div>
+
+                <div class="p-4">
+                    @if (!string.IsNullOrEmpty(Model.SteamId)) //wyswietlenie detali polaczenia ze steam
+                    {
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h5 class="text-white mb-1" style="text-shadow: 0 0 5px var(--neon-cyan);">Konto aktywne</h5>
+                                <p class="text-muted mb-0 small font-monospace">STEAM ID: @Model.SteamId</p>
+
+                                @if (Model.IsCreatedBySteam) //informacja o logowaniu zewnetrznym
+                                {
+                                    <div class="mt-2 text-white-50 small">
+                                        <i class="bi bi-info-circle me-1"></i> Logujesz się bezpośrednio przez Steam.
+                                    </div>
+                                }
+                            </div>
+                            <div class="col-md-4 text-end mt-3 mt-md-0">
+                                @if (!Model.IsCreatedBySteam) //mozliwosc odlaczenia tylko dla kont lokalnych
+                                {
+                                    <button type="button" class="btn btn-steam-disconnect" data-bs-toggle="modal" data-bs-target="#disconnectSteamModal">
+                                        ODŁĄCZ KONTO
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else //formularz laczenia konta
+                    {
+                        <div class="text-center">
+                            <p class="text-muted mb-4">Połącz swoje konto Steam, aby automatycznie importować bibliotekę gier, okładki oraz śledzić postępy.</p>
+
+                            <form asp-controller="Profile" asp-action="LinkSteam" method="post">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-steam-connect">
+                                    <i class="bi bi-steam me-2"></i> POŁĄCZ ZE STEAM
+                                </button>
+                            </form>
+                        </div>
+                    }
+
+                    <div class="mt-4 pt-3 border-top" style="border-color: rgba(255,255,255,0.1) !important;">
+                        <div class="text-center" style="opacity: 0.6;">
+                            <p class="text-white-50 small mb-1" style="font-size: 0.7rem;">
+                                This site is not associated with Valve Corporation.
+                            </p>
+                            <p class="text-muted mb-0" style="font-size: 0.65rem; line-height: 1.2;">
+                                Steam and the Steam logo are trademarks of Valve Corporation.<br />
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            @* 2. ZMIANA HASŁA *@
+            @if (!Model.IsCreatedBySteam) //sekcja widoczna tylko dla uzytkownikow z haslem lokalnym
+            {
+                <div class="settings-card">
+                    <div class="settings-header">
+                        <i class="bi bi-shield-lock me-2"></i> ZMIANA HASŁA
+                    </div>
+                    <div class="p-4">
+                        <form asp-action="ChangePassword" method="post">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="form-floating">
+                                        <input type="password" name="changePasswordModel.OldPassword" class="form-control form-control-tech" id="oldPass" placeholder="Obecne hasło" />
+                                        <label for="oldPass">Obecne hasło</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-floating">
+                                        <input type="password" name="changePasswordModel.NewPassword" class="form-control form-control-tech" id="newPass" placeholder="Nowe hasło" />
+                                        <label for="newPass">Nowe hasło</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-floating">
+                                        <input type="password" name="changePasswordModel.ConfirmPassword" class="form-control form-control-tech" id="confirmPass" placeholder="Potwierdź" />
+                                        <label for="confirmPass">Potwierdź</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4 text-end">
+                                <button type="submit" class="btn btn-neon-primary">ZATWIERDŹ ZMIANĘ</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+
+            @* 3. STREFA NIEBEZPIECZNA *@
+            @if (!isAdmin) //blokada usuwania konta dla administratora glównego
+            {
+                <div class="settings-card danger-zone">
+                    <div class="p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <div>
+                            <h6 class="text-danger mb-1 text-uppercase">
+                                <i class="bi bi-radioactive me-2"></i> Strefa Niebezpieczna
+                            </h6>
+                            <small class="text-white-50">Trwałe usunięcie konta i wszystkich danych.</small>
+                        </div>
+                        <button type="button" class="btn btn-danger-custom" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                            USUŃ KONTO
+                        </button>
+                    </div>
+                </div>
+            }
+
+        </div>
+    </div>
+</div>
+
+@* --- MODAL: USUWANIA KONTA --- *@
+@if (!isAdmin)
+{
+    <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-neon modal-compact" style="border-color: var(--neon-red);">
+
+                <div class="modal-header border-0 position-relative justify-content-center pt-4 pb-0">
+                    <h5 class="modal-title text-neon-danger text-uppercase fw-bold text-center w-100 m-0">
+                        <i class="bi bi-exclamation-octagon-fill me-2"></i> Potwierdzenie
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body d-flex flex-column justify-content-center align-items-center text-center py-4 text-white">
+                    <i class="bi bi-person-x-fill display-4 text-neon-danger mb-3 d-block" style="text-shadow: 0 0 20px red;"></i>
+                    <p class="fs-5 mb-2">Czy na pewno chcesz usunąć konto?</p>
+                    <p class="text-muted small mb-0">Tej operacji nie można cofnąć. Stracisz dostęp do swojej biblioteki.</p>
+                </div>
+
+                <div class="modal-footer border-0 justify-content-center pb-4 pt-0 gap-3">
+                    <button type="button" class="btn btn-ghost-cancel px-4 btn-modal-action" data-bs-dismiss="modal">ANULUJ</button>
+                    <form asp-action="DeleteAccount" method="post" style="display: contents;">
+                        <button type="submit" class="btn btn-danger-custom px-4 btn-modal-action">POTWIERDZAM</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* --- MODAL: ODŁĄCZANIA STEAM --- *@
+<div class="modal fade" id="disconnectSteamModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-neon modal-compact" style="border-color: var(--neon-cyan);">
+
+            <div class="modal-header border-0 position-relative justify-content-center pt-4 pb-0">
+                <h5 class="modal-title text-uppercase fw-bold text-center w-100 m-0" style="color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan);">
+                    <i class="bi bi-steam me-2"></i> Odłączanie Steam
+                </h5>
+                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body d-flex flex-column justify-content-center align-items-center text-center py-4 text-white">
+                <i class="bi bi-plug-fill display-4 mb-3 d-block" style="color: var(--neon-cyan); text-shadow: 0 0 15px var(--neon-cyan);"></i>
+                <p class="fs-5 mb-2">Czy na pewno chcesz odłączyć konto?</p>
+                <p class="text-muted small mb-0">
+                    Twoje gry pozostaną w bibliotece, ale ich postępy i osiągnięcia przestaną być synchronizowane automatycznie.
+                </p>
+            </div>
+
+            <div class="modal-footer border-0 justify-content-center pb-4 pt-0 gap-3">
+                <button type="button" class="btn btn-ghost-cancel px-4 btn-modal-action" data-bs-dismiss="modal">ANULUJ</button>
+
+                <form asp-controller="Profile" asp-action="DisconnectSteam" method="post" style="display: contents;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-steam-disconnect px-4 btn-modal-action">
+                        ODŁĄCZ
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" /> @* ladowanie skryptow walidacji *@
+}

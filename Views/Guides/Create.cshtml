@@ -1,0 +1,460 @@
+﻿@model praca_dyplomowa_zesp.Models.Modules.Guides.Guide
+
+@{
+    ViewData["Title"] = "Utwórz poradnik";
+}
+
+<script src="https://unpkg.com/tinymce@6.8.2/tinymce.min.js"></script>
+
+<div class="container mt-4 main-container fade-in-up">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-neon-title mb-0" style="letter-spacing: 2px;">NOWY PORADNIK</h2>
+            <p class="text-muted small mb-0">Podziel się wiedzą z innymi graczami</p>
+        </div>
+        <a asp-action="Index" asp-route-gameId="@Model.IgdbGameId" class="btn btn-ghost-cancel border border-secondary px-4">
+            <i class="fas fa-arrow-left me-2"></i> ANULUJ
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-12">
+
+            <div class="glass-panel p-4" style="border-top: 3px solid var(--neon-purple);">
+
+                <form asp-action="Create" enctype="multipart/form-data" id="createForm">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-neon alert-neon-danger mb-4"></div>
+                    <input type="hidden" asp-for="IgdbGameId" />
+
+                    <div class="row g-4">
+                        <div class="col-lg-8">
+
+                            <div class="form-floating mb-4">
+                                <input asp-for="Title" class="form-control form-control-tech fs-5 fw-bold text-white" placeholder="Tytuł" style="height: 60px;" />
+                                <label asp-for="Title" class="text-neon-purple">TYTUŁ PORADNIKA</label>
+                                <span asp-validation-for="Title" class="text-danger small mt-1 d-block"></span>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-end mb-2">
+                                    <label asp-for="Content" class="text-white-50 small text-uppercase fw-bold">Treść poradnika</label>
+                                    <button type="button" class="btn btn-sm btn-outline-light" style="border-color: var(--neon-cyan); color: var(--neon-cyan);" data-bs-toggle="modal" data-bs-target="#mapsModal" onclick="resetModal()">
+                                        <i class="fas fa-map-marked-alt me-2"></i> WSTAW MAPĘ
+                                    </button>
+                                </div>
+                                <textarea asp-for="Content" id="guide-editor"></textarea>
+                                <span asp-validation-for="Content" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4">
+
+                            <div class="form-floating mb-4">
+                                <textarea asp-for="Description" class="form-control form-control-tech" placeholder="Wstęp" style="height: 120px; resize: none;"></textarea>
+                                <label asp-for="Description" class="text-muted">KRÓTKI WSTĘP (TEASER)</label>
+                                <span asp-validation-for="Description" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="text-white-50 small text-uppercase fw-bold mb-2">Zdjęcie okładkowe (Wymagane)</label>
+
+                                <div class="file-upload-zone p-3 text-center">
+                                    <input type="file" id="coverImageInput" name="coverImageFile" class="form-control d-none" accept="image/*" required onchange="previewFile()" />
+
+                                    <label for="coverImageInput" class="btn btn-sm btn-ghost-cancel border border-secondary mb-3 pointer-event px-3">
+                                        <i class="fas fa-upload me-2"></i> Wybierz plik
+                                    </label>
+
+                                    <div id="imagePreviewContainer" class="position-relative d-none mx-auto" style="width: 100%; max-height: 200px; overflow:hidden; border-radius: 6px;">
+                                        <img id="imagePreview" src="#" class="w-100 h-100" style="object-fit: cover;" />
+                                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" onclick="clearImage()">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <div id="uploadPlaceholder" class="text-muted small fst-italic">Brak wybranego pliku</div>
+                                </div>
+                                <span asp-validation-for="CoverImage" class="text-danger small"></span>
+                            </div>
+
+                            <div class="glass-panel p-3 bg-black bg-opacity-25 mt-4" style="border: 1px solid var(--neon-purple);">
+                                <h6 class="text-neon-purple text-uppercase small fw-bold mb-3">Publikacja</h6>
+                                <div class="d-grid gap-2">
+                                    <button type="submit" name="action" value="publish" class="btn btn-neon-green fw-bold py-2">
+                                        <i class="fas fa-rocket me-2"></i> OPUBLIKUJ
+                                    </button>
+                                    <button type="submit" name="action" value="draft" class="btn btn-ghost-cancel border border-secondary text-white-50 py-2">
+                                        <i class="fas fa-save me-2"></i> ZAPISZ SZKIC
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="mapsModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content modal-neon" style="border-color: var(--neon-cyan);">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title text-neon-cyan fw-bold text-uppercase"><i class="fas fa-globe me-2"></i> MAPY</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+
+                <div id="step-select-map" class="p-4">
+                    <div class="row g-4">
+                        <div class="col-lg-8">
+                            <div class="mb-3">
+                                <div class="admin-search-merged">
+                                    <div class="admin-search-merged-inner">
+                                        <div class="form-floating h-100 flex-grow-1">
+                                            <input type="text" class="form-control text-white" id="mapSearch" placeholder="Szukaj mapy..." onkeyup="filterMaps()">
+                                            <label for="mapSearch" class="text-muted">Szukaj mapy...</label>
+                                        </div>
+                                        <button class="btn-search-integrated">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row row-cols-1 row-cols-md-3 g-3" id="mapsListContainer" style="max-height: 500px; overflow-y: auto;">
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4">
+                            <div class="glass-panel p-3 border-secondary">
+                                <h6 class="text-white text-uppercase small fw-bold mb-3"><i class="fas fa-cloud-upload-alt me-2 text-neon-green"></i> Dodaj nową mapę</h6>
+                                <form id="uploadMapForm" enctype="multipart/form-data">
+                                    <div class="mb-3">
+                                        <div class="form-floating mb-2">
+                                            <input type="text" class="form-control form-control-tech" id="newMapName" placeholder="Nazwa mapy" required>
+                                            <label for="newMapName" class="text-muted">Nazwa mapy</label>
+                                        </div>
+                                        <input type="file" class="form-control form-control-tech" id="newMapFile" accept="image/*" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-neon-green w-100 btn-sm">DODAJ DO BAZY</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="step-draw-map" class="d-none d-flex flex-column" style="height: 80vh;">
+                    <div class="p-2 bg-dark border-bottom border-secondary d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-3 px-3">
+                            <span class="text-neon-cyan fw-bold text-uppercase" id="drawingMapName">MAPA</span>
+                            <div class="d-flex align-items-center gap-2 border-start border-secondary ps-3">
+                                <label class="small text-white-50">Kolor:</label>
+                                <input type="color" class="form-control form-control-color bg-transparent border-0 p-0" id="drawingColor" value="#00f3ff">
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-light" onclick="backToSelect()">WRÓĆ</button>
+                    </div>
+
+                    <div id="editorMap" class="flex-grow-1 bg-black"></div>
+
+                    <div class="p-3 bg-dark border-top border-secondary text-end">
+                        <button class="btn btn-neon-primary px-4" onclick="finishAndInsert()">
+                            <i class="fas fa-check me-2"></i> ZATWIERDŹ I WSTAW
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script src="https://unpkg.com/leaflet-simple-map-screenshoter"></script>
+
+    <script>
+        function previewFile() { //generowanie podglądu wybranego zdjęcia okładkowego
+            const previewContainer = document.getElementById('imagePreviewContainer');
+            const previewImage = document.getElementById('imagePreview');
+            const placeholder = document.getElementById('uploadPlaceholder');
+            const fileInput = document.getElementById('coverImageInput');
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    previewContainer.classList.remove('d-none');
+                    placeholder.classList.add('d-none');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+        function clearImage() {
+            document.getElementById('coverImageInput').value = "";
+            document.getElementById('imagePreviewContainer').classList.add('d-none');
+            document.getElementById('uploadPlaceholder').classList.remove('d-none');
+        }
+
+        function fixUrl(url) { //funkcja korygująca ścieżki URL plików
+            if (!url) return '';
+            if (url.startsWith('http') || url.startsWith('data:')) return url;
+            if (!url.startsWith('/')) return '/' + url;
+            return url;
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            tinymce.init({ //inicjalizacja edytora treści TinyMCE
+                selector: '#guide-editor',
+                plugins: 'anchor autolink charmap emoticons image link lists media searchreplace table visualblocks wordcount',
+                toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
+                height: 600,
+                menubar: false,
+                skin: "oxide-dark",
+                content_css: "dark",
+                automatic_uploads: true,
+                convert_urls: false,
+                extended_valid_elements : 'img[class|src|border|alt|title|width|height|style|data-geojson|data-map-name|data-origin-src]', //zezwolenie na atrybuty mapy
+                setup: function (editor) {
+                    editor.on('dblclick', function (e) { //otwieranie edycji mapy po dwukrotnym kliknięciu w obraz
+                        var target = e.target;
+                        if (target.nodeName === 'IMG' && target.classList.contains('interactive-map-source')) {
+                            editExistingMap(target);
+                        }
+                    });
+                }
+            });
+        });
+
+        var gameId = @Model.IgdbGameId;
+        var editorMap = null;
+        var drawnItems = null;
+        var currentMapData = null;
+        var screenshoter = null;
+        var editingNode = null;
+
+        function resetModal() {
+            editingNode = null;
+            $('#step-select-map').removeClass('d-none');
+            $('#step-draw-map').addClass('d-none');
+            loadMaps();
+        }
+
+        function loadMaps() { //pobieranie listy map dostępnych dla danej gry
+            var search = $('#mapSearch').val();
+            $.get('/Maps/GetMapsForGame', { gameId: gameId, searchString: search }, function (data) {
+                var container = $('#mapsListContainer');
+                container.empty();
+                if (data.length === 0) {
+                    container.html('<div class="col-12 text-center text-muted py-4">Brak map w bazie. Dodaj pierwszą!</div>');
+                    return;
+                }
+                data.forEach(function (map) {
+                    var safeUrl = fixUrl(map.imageUrl);
+                    var html = `
+                        <div class="col">
+                            <div class="card bg-dark border-secondary h-100 map-card-hover" style="cursor:pointer; overflow:hidden;" onclick="startEditingMap('${safeUrl}', '${map.name}')">
+                                <div style="height: 120px;">
+                                    <img src="${safeUrl}" class="w-100 h-100" style="object-fit: cover; opacity: 0.8;">
+                                </div>
+                                <div class="card-footer p-2 bg-black border-top border-secondary text-center">
+                                    <small class="text-white text-uppercase fw-bold">${map.name}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.append(html);
+                });
+            });
+        }
+        function filterMaps() { loadMaps(); }
+
+        $('#uploadMapForm').on('submit', function (e) { //obsługa wysyłania nowej mapy na serwer
+            e.preventDefault();
+            var formData = new FormData();
+            formData.append('gameId', gameId);
+            formData.append('name', $('#newMapName').val());
+            formData.append('file', $('#newMapFile')[0].files[0]);
+            $.ajax({
+                url: '/Maps/UploadMap', type: 'POST', data: formData, processData: false, contentType: false,
+                success: function (response) { $('#uploadMapForm')[0].reset(); loadMaps(); },
+                error: function () { alert('Błąd podczas dodawania mapy.'); }
+            });
+        });
+
+        function startEditingMap(url, name) {
+            currentMapData = { url: url, name: name };
+            $('#step-select-map').addClass('d-none');
+            $('#step-draw-map').removeClass('d-none');
+            $('#drawingMapName').text(name);
+            setTimeout(function() { initEditorMap(null); }, 300);
+        }
+
+        function editExistingMap(imgNode) { //wczytanie danych istniejącej mapy do ponownej edycji
+            editingNode = imgNode;
+            var originSrc = imgNode.getAttribute('data-origin-src');
+            var mapName = imgNode.getAttribute('data-map-name');
+            var geoJsonStr = imgNode.getAttribute('data-geojson');
+
+            if (!originSrc) { alert("Błąd: Nie można odczytać źródła mapy."); return; }
+
+            currentMapData = { url: fixUrl(originSrc), name: mapName };
+            var modal = new bootstrap.Modal(document.getElementById('mapsModal'));
+            modal.show();
+
+            $('#step-select-map').addClass('d-none');
+            $('#step-draw-map').removeClass('d-none');
+            $('#drawingMapName').text(mapName);
+
+            setTimeout(function() { initEditorMap(geoJsonStr); }, 300);
+        }
+
+        function backToSelect() {
+            $('#step-draw-map').addClass('d-none');
+            $('#step-select-map').removeClass('d-none');
+        }
+
+        function getPinIcon(color) { //tworzenie niestandardowej ikony punktu na mapie
+            return L.divIcon({
+                className: 'custom-pin-icon',
+                html: `<i class="fas fa-map-marker-alt fa-3x" style="color: ${color}; text-shadow: 0px 0px 10px ${color};"></i>`,
+                iconSize: [30, 42],
+                iconAnchor: [15, 42],
+                popupAnchor: [0, -45]
+            });
+        }
+
+        function initEditorMap(initialGeoJson) { //inicjalizacja silnika map Leaflet w trybie edycji
+            if (editorMap) { editorMap.remove(); editorMap = null; }
+            editorMap = L.map('editorMap', {
+                crs: L.CRS.Simple, minZoom: -2, maxZoom: 4, zoomSnap: 0.25, preferCanvas: true //użycie układu płaskiego dla obrazów
+            });
+
+            screenshoter = L.simpleMapScreenshoter({ hidden: true, mimeType: 'image/png' }).addTo(editorMap);
+
+            var img = new Image();
+            img.src = currentMapData.url;
+            img.onload = function() {
+                var w = this.width; var h = this.height;
+                var southWest = editorMap.unproject([0, h], editorMap.getMaxZoom() - 1);
+                var northEast = editorMap.unproject([w, 0], editorMap.getMaxZoom() - 1);
+                var bounds = new L.LatLngBounds(southWest, northEast);
+
+                L.imageOverlay(currentMapData.url, bounds).addTo(editorMap);
+                editorMap.fitBounds(bounds);
+                editorMap.setMinZoom(editorMap.getBoundsZoom(bounds));
+                editorMap.setMaxBounds(bounds);
+
+                drawnItems = new L.FeatureGroup();
+                editorMap.addLayer(drawnItems);
+
+                if (initialGeoJson) { //ładowanie istniejących punktów i kształtów z formatu GeoJSON
+                    try {
+                        var geoData = JSON.parse(initialGeoJson);
+                        L.geoJSON(geoData, {
+                            pointToLayer: function (feature, latlng) {
+                                var color = feature.properties.color || '#dc3545';
+                                var marker = L.marker(latlng, { icon: getPinIcon(color) });
+                                if (feature.properties.note) marker.bindPopup(feature.properties.note);
+                                return marker;
+                            },
+                            style: function (feature) {
+                                var color = feature.properties.color || '#dc3545';
+                                return { color: color, fillColor: color, fillOpacity: 0.5, weight: 4 };
+                            },
+                            onEachFeature: function (feature, layer) {
+                                layer.feature = feature; drawnItems.addLayer(layer);
+                            }
+                        });
+                    } catch (e) { console.error("Błąd GeoJSON: ", e); }
+                }
+
+                var drawControl = new L.Control.Draw({
+                    draw: {
+                        polyline: { shapeOptions: { weight: 4 } },
+                        polygon: { shapeOptions: { weight: 2 } },
+                        rectangle: { shapeOptions: { weight: 2 } },
+                        circle: false, circlemarker: false, marker: true
+                    },
+                    edit: { featureGroup: drawnItems }
+                });
+                editorMap.addControl(drawControl);
+
+                editorMap.on(L.Draw.Event.CREATED, function (e) { //obsługa dodania nowego elementu na mapę
+                    var layer = e.layer;
+                    var type = e.layerType;
+                    var color = document.getElementById('drawingColor').value;
+                    var note = "";
+
+                    if (type === 'marker') {
+                        layer.setIcon(getPinIcon(color));
+                        note = prompt("Podaj opis dla tego punktu (opcjonalnie):", "");
+                        if(note) layer.bindPopup(note);
+                    } else if (layer.setStyle) {
+                        layer.setStyle({ color: color, fillColor: color, fillOpacity: 0.5 });
+                    }
+
+                    if (!layer.feature) { layer.feature = layer.toGeoJSON(); }
+                    layer.feature.properties = layer.feature.properties || {};
+                    layer.feature.properties.color = color;
+                    layer.feature.properties.note = note;
+
+                    drawnItems.addLayer(layer);
+                });
+            };
+        }
+
+        function finishAndInsert() { //generowanie statycznego podglądu mapy i wstawienie do edytora tekstu
+            var geoJsonData = drawnItems.toGeoJSON();
+            var jsonString = JSON.stringify(geoJsonData);
+            var safeJson = jsonString.replace(/"/g, '&quot;');
+
+            screenshoter.takeScreen('blob').then(blob => { //wykonanie zrzutu ekranu mapy z naniesionymi zmianami
+                var reader = new FileReader();
+                reader.readAsDataURL(blob);
+                reader.onloadend = function() {
+                    var base64data = reader.result;
+                    var imgHtml = `<img src="${base64data}" data-origin-src="${currentMapData.url}" data-geojson="${safeJson}" data-map-name="${currentMapData.name}" class="img-fluid rounded border border-secondary interactive-map-source" style="max-width: 100%; height: auto; display: block; margin: 0 auto; box-shadow: 0 0 10px rgba(0,243,255,0.3);" />`;
+                    var wrapperHtml = `<div class="interactive-map-wrapper my-3 text-center">${imgHtml}</div><p>&nbsp;</p>`;
+
+                    if (editingNode) {
+                        tinymce.activeEditor.selection.select(editingNode);
+                        tinymce.activeEditor.insertContent(wrapperHtml);
+                    } else {
+                        tinymce.activeEditor.insertContent(wrapperHtml);
+                    }
+
+                    var modalEl = document.getElementById('mapsModal');
+                    var modal = bootstrap.Modal.getInstance(modalEl);
+                    modal.hide();
+                }
+            }).catch(e => { alert('Błąd generowania podglądu: ' + e); });
+        }
+    </script>
+
+    <style>
+        .custom-pin-icon {
+            background: transparent !important;
+            border: none !important;
+            text-align: center;
+            line-height: 42px;
+            width: 30px !important;
+            margin-left: -15px !important;
+            margin-top: -42px !important;
+        }
+
+        .map-card-hover:hover {
+            border-color: var(--neon-cyan) !important;
+            transform: translateY(-2px);
+            transition: 0.2s;
+        }
+
+            .map-card-hover:hover img {
+                opacity: 1 !important;
+            }
+    </style>
+}

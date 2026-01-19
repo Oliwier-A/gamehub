@@ -1,0 +1,215 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using praca_dyplomowa_zesp.Models.Modules.Users
+@inject UserManager<User> UserManager
+@inject SignInManager<User> SignInManager
+
+@{
+    // --- GLOBALNA LOGIKA KOLORÓW RANGI (NEON) ---
+    string globalRoleColor = "var(--neon-cyan)"; //domyslny kolor motywu dla uzytkownika
+
+    if (User.IsInRole("Admin")) //ustawienie czerwonego koloru dla administratora
+    {
+        globalRoleColor = "var(--neon-red)";
+    }
+    else if (User.IsInRole("Moderator")) //ustawienie zielonego koloru dla moderatora
+    {
+        globalRoleColor = "var(--neon-green)";
+    }
+}
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - GameHub</title>
+
+    @* --- BIBLIOTEKI ZEWNĘTRZNE --- *@
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+
+    @* LEAFLET (Mapy) *@
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+
+    @* --- GŁÓWNY STYL APLIKACJI (High-Tech Cyberpunk) --- *@
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/praca_dyplomowa_zesp.styles.css" asp-append-version="true" />
+</head>
+
+<body style="--role-color: @globalRoleColor;">
+    @* przekazanie koloru roli do zmiennej css body *@
+
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark mb-3">
+            <div class="container-fluid">
+
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">GAMEHUB</a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1 align-items-center">
+
+                        @* PRZEGLĄDAJ GRY *@
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-controller="Games" asp-action="Index" asp-route-mode="browse">
+                                <i class="fas fa-gamepad me-1"></i> Przeglądaj Gry
+                            </a>
+                        </li>
+
+                        @* GUIDES & TIPS (Dropdown) *@
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" id="guidesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"
+                               asp-controller="Games" asp-action="Index" asp-route-mode="guides">
+                                <i class="fas fa-book-open me-1"></i> Guides & Tips
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="guidesDropdown">
+                                @await Component.InvokeAsync("PopularGames") @* komponent wyswietlajacy popularne gry *@
+                            </ul>
+                        </li>
+
+                        @* MOJA BIBLIOTEKA (Dla zalogowanych) *@
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Library" asp-action="Index">
+                                    <i class="fas fa-layer-group me-1"></i> Moja Biblioteka
+                                </a>
+                            </li>
+
+                            @* BIBLIOTEKA STEAM (Jeśli połączono) *@
+                            var user = await UserManager.GetUserAsync(User); //pobranie danych aktualnego uzytkownika
+                            if (user != null && !string.IsNullOrEmpty(user.SteamId))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link nav-link-cyan" asp-controller="Profile" asp-action="SteamLibrary" style="color: var(--neon-cyan) !important;">
+                                        <i class="fab fa-steam me-1"></i> Biblioteka Steam
+                                    </a>
+                                </li>
+                            }
+                        }
+                    </ul>
+
+                    @* PANEL LOGOWANIA *@
+                    <partial name="_LoginPartial" />
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container main-container">
+        <main role="main" class="pb-3">
+
+            @* GLOBALNE POWIADOMIENIA *@
+            @{
+                var successMessage = TempData["Success"]?.ToString() ?? TempData["StatusMessage"]?.ToString() ?? ViewData["StatusMessage"]?.ToString();
+                var errorMessage = TempData["Error"]?.ToString() ?? ViewData["ErrorMessage"]?.ToString();
+            }
+
+            @if (!string.IsNullOrEmpty(successMessage)) //sekcja wyswietlania komunikatow o sukcesie
+            {
+                <div class="alert alert-neon alert-neon-success alert-dismissible fade show mb-4" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-check-circle me-3 icon-glow"></i>
+                        <div>
+                            <strong>SUKCES</strong><br />
+                            @successMessage
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(errorMessage)) //sekcja wyswietlania komunikatow o bledach
+            {
+                <div class="alert alert-neon alert-neon-danger alert-dismissible fade show mb-4" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle me-3 icon-glow"></i>
+                        <div>
+                            <strong>BŁĄD</strong><br />
+                            @errorMessage
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @RenderBody() @* miejsce wstrzykiwania widokow podstron *@
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted py-4">
+        @* stopka strony z informacjami o projekcie *@
+        <div class="container">
+            <div class="text-center mb-3">
+                <span class="fw-bold text-uppercase" style="letter-spacing: 2px;">
+                    &copy; 2025 - @DateTime.Now.Year
+                    <span style="color: #bc13fe;">GAMEHUB</span>
+                </span>
+                <span class="mx-2 text-secondary">|</span>
+                <a asp-area="" asp-controller="Home" asp-action="Privacy" class="footer-link">Privacy Policy</a>
+                <span class="mx-2 text-secondary">|</span>
+                <a asp-controller="Tickets" asp-action="Index" class="footer-link">
+                    <i class="fas fa-headset me-1"></i> Support / Kontakt
+                </a>
+            </div>
+
+            <div class="text-center small opacity-75">
+                @* informacja o zrodlach danych *@
+                <div class="mb-2">
+                    <span class="me-3">
+                        <i class="fab fa-steam me-1"></i> Powered by <strong>Steam</strong>
+                    </span>
+                    <span>
+                        <i class="fas fa-database me-1"></i> Data provided by <a href="https://www.igdb.com" target="_blank" rel="noopener" class="footer-link">IGDB.com</a>
+                    </span>
+                </div>
+
+                <p class="mb-0" style="font-size: 0.75rem; line-height: 1.2;">
+                    Steam and the Steam logo are trademarks and/or registered trademarks of Valve Corporation in the U.S. and/or other countries.
+                    This site is not associated with Valve Corporation.
+                    <br />
+                    All game titles, data, and images are property of their respective owners.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    @* Opcjonalny styl dla linków w stopce, żeby pasował do reszty *@
+    <style>
+        .footer-link {
+            color: inherit;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+            .footer-link:hover {
+                color: var(--role-color);
+                text-shadow: 0 0 8px var(--role-color);
+            }
+
+        .footer {
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(5px);
+        }
+    </style>
+
+    @* MODALE LOGOWANIA/REJESTRACJI *@
+    <partial name="_AuthModals" />
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @* SKRYPTY MAP *@
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

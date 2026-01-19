@@ -1,0 +1,97 @@
+﻿@model praca_dyplomowa_zesp.Models.ViewModels.Home.HomeViewModel
+@{
+    ViewData["Title"] = "Strona Główna"; //ustawienie tytulu strony
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
+<div class="hero-section">
+    <div class="hero-content">
+        <h1 class="neon-logo">GAMEHUB</h1>
+        @if (User.Identity.IsAuthenticated) //wyswietlanie powitania dla zalogowanego uzytkownika
+        {
+            <p class="hero-subtitle">Witaj ponownie w centrum rozgrywki</p>
+        }
+        else //zacheta do logowania dla gosci
+        {
+            <p class="hero-subtitle">Zaloguj się, aby zarządzać swoją kolekcją</p>
+        }
+    </div>
+
+    <div class="swiper mySwiper">
+        @* kontener glowny karuzeli gier *@
+        <div class="swiper-wrapper">
+            @if (Model.Games != null && Model.Games.Any())
+            {
+                foreach (var game in Model.Games) //generowanie slajdow dla kazdej gry w modelu
+                {
+                    <div class="swiper-slide">
+                        <img src="@(game.CoverUrl ?? "https://via.placeholder.com/380x570?text=No+Cover")" alt="@game.Name" />
+
+                        <div class="game-info">
+                            @if (game.IsInLibrary) //wyswietlanie statusu posiadania gry
+                            {
+                                <span class="badge-library-neon">W BIBLIOTECE</span>
+                                <br />
+                            }
+                            <div class="game-title">@game.Name</div>
+
+                            <a asp-controller="Games" asp-action="Details" asp-route-id="@game.IgdbId"
+                               class="btn btn-sm btn-save-custom px-4 rounded-pill">
+                                ZOBACZ
+                            </a>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-white text-center">Wczytywanie gier...</div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+    <script>
+        // dodanie klasy do body w celu aktywacji specyficznych stylow strony glownej
+        document.body.classList.add('home-page');
+
+        window.addEventListener('unload', function () {
+            document.body.classList.remove('home-page');
+        });
+
+        // inicjalizacja i konfiguracja karuzeli Swiper z efektem coverflow
+        var swiper = new Swiper(".mySwiper", {
+            effect: "coverflow",
+            grabCursor: true,
+            centeredSlides: true,
+            slidesPerView: "auto",
+            initialSlide: 2,
+            loop: true,
+            loopedSlides: 6,
+            speed: 700,
+            coverflowEffect: {
+                rotate: 0,
+                stretch: -55,
+                depth: 0,
+                modifier: 1,
+                slideShadows: true,
+                scale: 1
+            },
+            autoplay: {
+                delay: 3000,
+                disableOnInteraction: false,
+                pauseOnMouseEnter: true
+            },
+            keyboard: {
+                enabled: true,
+            },
+            mousewheel: {
+                invert: false,
+            },
+        });
+    </script>
+}

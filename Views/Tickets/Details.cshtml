@@ -1,0 +1,239 @@
+﻿@model Ticket
+@using Microsoft.AspNetCore.Identity
+@using praca_dyplomowa_zesp.Models.Interactions
+@using praca_dyplomowa_zesp.Models.Modules.Users
+@using praca_dyplomowa_zesp.Models
+@inject UserManager<User> UserManager
+
+@{
+    ViewData["Title"] = "Szczegóły zgłoszenia";
+    var currentUser = await UserManager.GetUserAsync(User);
+
+    //funkcja pomocnicza do dynamicznego ustalania kolorystyki interfejsu na podstawie roli użytkownika
+    async Task<string> GetUserRoleColor(User user)
+    {
+        if (user == null) return "var(--neon-cyan)";
+        if (await UserManager.IsInRoleAsync(user, "Admin")) return "var(--neon-red)";
+        if (await UserManager.IsInRoleAsync(user, "Moderator")) return "var(--neon-green)";
+        return "var(--neon-cyan)";
+    }
+
+    string authorColor = await GetUserRoleColor(Model.User);
+}
+
+<div id="toast-container" class="position-fixed top-50 start-50 translate-middle p-3" style="z-index: 9999; min-width: 450px;"></div>
+
+<div class="container-fluid admin-container fade-in-up" style="margin-top: 30px; height: calc(100vh - 140px);">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-shrink-0">
+        <h2 class="admin-title text-start m-0" style="font-size: 1.8rem;">
+            Zgłoszenie #@Model.Id
+        </h2>
+        <a asp-action="Index" class="btn btn-low-tier btn-sm h-100">
+            <i class="bi bi-arrow-return-left me-2"></i> POWRÓT DO LISTY
+        </a>
+    </div>
+
+    <div class="ticket-layout">
+
+        <div class="ticket-info-panel">
+            <div class="d-flex flex-column gap-4 w-100">
+                <div class="info-group">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="flex-shrink-0">
+                            <img src="@Url.Action("GetAvatar", "Profile", new { id = Model.UserId })"
+                                 class="author-avatar"
+                                 style="border-color: @authorColor; box-shadow: 0 0 15px @authorColor.Replace("var", "rgba").Replace(")", ", 0.4)");">
+                        </div>
+                        <div>
+                            <div class="info-label mb-1">Twoje konto</div>
+                            <h4 class="text-white mb-0 fw-bold">@(Model.User?.UserName ?? "Użytkownik")</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-group">
+                    <div class="info-label">Temat zgłoszenia</div>
+                    <div class="info-value text-white">@Model.Title</div>
+                </div>
+
+                <div class="info-group">
+                    <div class="info-label">Status</div>
+                    <div>
+                        @{
+                            var statusClass = Model.Status switch
+                            {
+                                TicketStatus.Oczekujące => "status-badge-light text-neon-green border-success",
+                                TicketStatus.W_trakcie => "status-badge-yellow",
+                                _ => "status-badge-grey"
+                            };
+                        }
+                        <span class="status-badge @statusClass ms-0">@Model.Status.ToString().ToUpper().Replace("_", " ")</span>
+                    </div>
+                </div>
+
+                <div class="info-group">
+                    <div class="info-label">Data utworzenia</div>
+                    <div class="info-value">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</div>
+                </div>
+
+                @if (Model.Status == TicketStatus.Zamknięte)
+                {
+                    <div class="alert alert-dark border-secondary mt-auto">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-2"></i>To zgłoszenie jest zamknięte.
+                        </small>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="ticket-chat-wrapper" style="border-color: var(--neon-purple); box-shadow: 0 0 25px rgba(189, 0, 255, 0.1);">
+
+            <div class="chat-header-bar">
+                <span class="fw-bold text-white"><i class="bi bi-chat-text-fill me-2 text-neon-purple"></i>KONWERSACJA</span>
+            </div>
+
+            <div class="chat-messages-area" id="chatBox">
+                <div class="initial-problem">
+                    <h6 class="text-uppercase fw-bold mb-2 text-muted" style="font-size: 0.7rem;">Twoja wiadomość początkowa:</h6>
+                    <p class="mb-0 text-white" style="white-space: pre-wrap;">@Model.Content</p>
+                </div>
+
+                @foreach (var msg in Model.Messages.OrderBy(m => m.CreatedAt))
+                {
+                    bool isMe = msg.UserId == currentUser?.Id;
+                    bool isStaff = msg.IsStaffReply;
+                    string msgColor = await GetUserRoleColor(msg.User);
+                    string alignClass = isMe ? "msg-right" : "msg-left";
+
+                    <div class="msg-row @alignClass">
+                        @if (!isMe)
+                        {
+                            <img src="@Url.Action("GetAvatar", "Profile", new { id = msg.UserId })"
+                                 class="msg-avatar" style="border-color: @msgColor;">
+                        }
+
+                        <div class="msg-bubble" style="border: 1px solid @(msgColor) !important;">
+                            <div class="msg-meta @(isMe ? "text-end" : "text-start")" style="color: @msgColor;">
+                                @if (isMe)
+                                {
+                                    <span>Ty</span>
+                                }
+                                else if (isStaff)
+                                {
+                                    <span>SUPPORT (@(msg.User?.UserName ?? "Admin"))</span>
+                                }
+                                else
+                                {
+                                    <span>@(msg.User?.UserName ?? "Użytkownik")</span>
+                                }
+                                <span class="text-muted ms-2 fw-normal" style="font-size: 0.65rem;">@msg.CreatedAt.ToString("HH:mm")</span>
+                            </div>
+
+                            <div class="msg-content">@msg.Message</div>
+
+                            @if (msg.Attachments?.Any() == true)
+                            {
+                                @* renderowanie załączników przesłanych w wiadomościach *@
+                                <div class="d-flex flex-wrap gap-2 mt-2 pt-2 border-top border-secondary" style="border-color: rgba(255,255,255,0.1) !important;">
+                                    @foreach (var att in msg.Attachments)
+                                    {
+                                        <img src="data:@att.ContentType;base64,@Convert.ToBase64String(att.FileContent)"
+                                             class="rounded border border-secondary"
+                                             style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;"
+                                             data-bs-toggle="modal" data-bs-target="#img-@att.Id" />
+
+                                        <div class="modal fade" id="img-@att.Id" tabindex="-1">
+                                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                                <div class="modal-content bg-transparent border-0">
+                                                    <div class="modal-body p-0 text-center position-relative">
+                                                        <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3 z-3" data-bs-dismiss="modal"></button>
+                                                        <img src="data:@att.ContentType;base64,@Convert.ToBase64String(att.FileContent)"
+                                                             class="img-fluid rounded border border-secondary" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        @if (isMe)
+                        {
+                            <img src="@Url.Action("GetAvatar", "Profile", new { id = msg.UserId })"
+                                 class="msg-avatar" style="border-color: @msgColor;">
+                        }
+                    </div>
+                }
+            </div>
+
+            @if (Model.Status != TicketStatus.Zamknięte)
+            {
+                <div class="chat-footer">
+                    <form asp-action="Reply" method="post" enctype="multipart/form-data" id="replyForm">
+                        <input type="hidden" name="id" value="@Model.Id" />
+
+                        <div id="previews" class="d-flex flex-wrap mb-2 ps-1"></div>
+                        <input type="file" name="attachments" id="attachmentInput" class="d-none" multiple accept="image/*" />
+
+                        <div class="d-flex align-items-center">
+                            <button type="button" class="btn-attachment me-2" onclick="document.getElementById('attachmentInput').click()" title="Dodaj obraz">
+                                <i class="bi bi-paperclip"></i>
+                            </button>
+
+                            <div class="chat-input-merged flex-grow-1">
+                                <div class="form-floating flex-grow-1">
+                                    <textarea name="message" id="messageInput" class="form-control" placeholder="Wiadomość" style="height: 55px;"></textarea>
+                                    <label for="messageInput">Napisz wiadomość...</label>
+                                </div>
+                                <button type="submit" class="btn-send-integrated">
+                                    WYŚLIJ <i class="bi bi-send-fill ms-2"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    //wymuszenie przewinięcia kontenera do dołu po załadowaniu historii
+    const chatBox = document.getElementById('chatBox');
+    if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+
+    //logika zarządzania podglądem plików przed wysłaniem odpowiedzi
+    const dataTransfer = new DataTransfer();
+    const input = document.getElementById('attachmentInput');
+    const previews = document.getElementById('previews');
+
+    input?.addEventListener('change', function() {
+        for(let i = 0; i < this.files.length; i++) {
+            const file = this.files[i];
+            if(file.type.startsWith('image/')) {
+                dataTransfer.items.add(file);
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const div = document.createElement('div');
+                    div.className = 'attachment-preview-wrapper';
+                    div.innerHTML = `
+                        <img src="${e.target.result}" class="attachment-preview-img">
+                        <button type="button" class="btn-remove-attachment" onclick="removeFile(${dataTransfer.items.length - 1})"><i class="bi bi-x"></i></button>
+                    `;
+                    previews.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        input.files = dataTransfer.files; //synchronizacja obiektu FileList
+    });
+
+    function removeFile(index) {
+        dataTransfer.items.remove(index);
+        input.files = dataTransfer.files;
+        previews.children[index].remove();
+    }
+</script>

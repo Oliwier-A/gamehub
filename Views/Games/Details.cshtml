@@ -1,0 +1,194 @@
+﻿@using praca_dyplomowa_zesp.Data
+@using praca_dyplomowa_zesp.Models.Interactions.Reactions
+@using praca_dyplomowa_zesp.Models.ViewModels.Games
+@inject ApplicationDbContext _context
+@model GameDetailViewModel
+@{
+    ViewData["Title"] = Model.Name;
+
+    var userIds = Model.TopReviews.Select(r => r.UserId).ToList(); //pobranie identyfikatorów autorów recenzji
+    var userRatings = _context.GameRates
+        .Where(r => r.IgdbGameId == Model.IgdbGameId && userIds.Contains(r.UserId))
+        .ToDictionary(r => r.UserId, r => r.Value); //pobranie ocen wystawionych przez autorów recenzji
+}
+
+<div class="container-fluid px-4 main-container mt-4 mb-5 fade-in-up">
+
+    <div class="game-hero">
+        <div class="hero-bg" style="background-image: url('@(Model.CoverUrl ?? "")');"></div> @* tło hero korzystające z okładki gry *@
+
+        <div class="hero-content w-100">
+            <div class="row g-4 align-items-start">
+
+                <div class="col-12 col-md-auto d-flex justify-content-center justify-content-md-start">
+                    <img src="@(Model.CoverUrl ?? "https://via.placeholder.com/264x352.png?text=Brak+okładki")"
+                         class="img-fluid game-cover-hero shadow-lg"
+                         style="max-width: 300px; width: 100%; height: auto;"
+                         alt="@Model.Name"> @* wyświetlanie głównej okładki gry *@
+                </div>
+
+                <div class="col-12 col-md game-info text-center text-md-start ps-md-4">
+                    <h1 class="game-details-title mb-3">@Model.Name</h1>
+
+                    <div class="row mb-4 justify-content-center justify-content-md-start">
+                        <div class="col-auto col-md-auto info-box pe-4">
+                            <span class="info-label d-block">Deweloper</span>
+                            <div class="info-value">@(Model.Developer ?? "Brak danych")</div>
+                        </div>
+
+                        <div class="col-auto col-md-auto info-box pe-4">
+                            <span class="info-label d-block">Data Wydania</span>
+                            <div class="info-value">@(Model.ReleaseDate ?? "TBA")</div>
+                        </div>
+                    </div>
+
+                    <div class="info-box mb-4">
+                        <span class="info-label d-block">Gatunki</span>
+                        <div class="info-value mt-2">
+                            @if (Model.Genres != null && Model.Genres.Any()) //wyświetlanie listy gatunków jako plakietki
+                            {
+                                @foreach (var genre in Model.Genres)
+                                {
+                                    <span class="status-badge status-badge-light me-1">@genre</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">Brak informacji</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-3 mt-4 justify-content-center justify-content-md-start">
+                        <a asp-controller="Guides" asp-action="Index" asp-route-gameId="@Model.IgdbGameId" class="btn btn-neon-primary">
+                            <i class="bi bi-book-half me-2"></i> Poradniki
+                        </a>
+
+                        <a asp-controller="Reviews" asp-action="Index" asp-route-gameId="@Model.IgdbGameId" asp-route-gameName="@Model.Name" class="btn btn-neon-cyan">
+                            <i class="bi bi-chat-left-text-fill me-2"></i> Recenzje
+                        </a>
+
+                        @if (User.Identity.IsAuthenticated) //opcje dostępne tylko dla zalogowanych użytkowników
+                        {
+                            <form asp-controller="Library" asp-action="Create" method="post" class="d-inline">
+                                <input type="hidden" name="IgdbGameId" value="@Model.IgdbGameId" />
+                                <button type="submit" class="btn btn-neon-green">
+                                    <i class="bi bi-plus-circle-fill me-2" style="font-size: 1.3rem; vertical-align: -0.15em;"></i> Do Biblioteki
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path" class="btn btn-neon-green">
+                                <i class="bi bi-box-arrow-in-right me-2"></i> Zaloguj się
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Ratings != null) //sekcja wyświetlająca statystyki ocen gry
+    {
+        <div class="mb-5 score-bar-container">
+            <partial name="_GameRatingPartial" model="Model.Ratings" />
+        </div>
+    }
+
+    <div>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="text-neon-title mb-0 text-start" style="font-size: 1.5rem; letter-spacing: 2px;">
+                Najpopularniejsze recenzje
+            </h3>
+            <a asp-controller="Reviews" asp-action="Index"
+               asp-route-gameId="@Model.IgdbGameId"
+               asp-route-gameName="@Model.Name"
+               class="btn btn-sm btn-ghost-cancel">
+                Wszystkie <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+
+        @if (Model.TopReviews != null && Model.TopReviews.Any()) //lista najlepiej ocenianych recenzji gry
+        {
+            <div class="row g-4">
+                @foreach (var review in Model.TopReviews)
+                {
+                    var likes = review.Reactions?.Count(r => r.Type == ReactionType.Like) ?? 0;
+                    var dislikes = review.Reactions?.Count(r => r.Type == ReactionType.Dislike) ?? 0;
+                    var score = likes - dislikes; //obliczanie bilansu reakcji recenzji
+
+                    string scoreColor = score > 0 ? "text-neon-green" : (score < 0 ? "text-neon-danger" : "text-muted");
+
+                    double authorRating = 0;
+                    if (userRatings.ContainsKey(review.UserId)) { authorRating = userRatings[review.UserId]; }
+
+                    string roleBorderColor = "var(--neon-cyan)";
+                    var userRole = review.User?.Role?.ToLower();
+
+                    if (userRole == "admin") { roleBorderColor = "var(--neon-red)"; } //kolor obramowania zależny od roli autora
+                    else if (userRole == "moderator") { roleBorderColor = "var(--neon-green)"; }
+
+                    <div class="col-md-4">
+                        <div class="card-review h-100">
+
+                            <div class="review-header">
+                                <div class="d-flex align-items-center">
+                                    <img src="@(review.User?.ProfilePicture != null ? Url.Action("GetAvatar", "Profile", new { id = review.UserId }) : "/uploads/avatars/default_avatar.png")"
+                                         class="review-avatar me-3"
+                                         style="border-color: @roleBorderColor; box-shadow: 0 0 15px @roleBorderColor;"
+                                         alt="Avatar">
+
+                                    <div>
+                                        <div class="fw-bold text-white" style="letter-spacing: 0.5px; font-size: 1rem; text-shadow: 0 0 10px rgba(255,255,255,0.4);">
+                                            @review.User?.UserName
+                                        </div>
+                                        <div class="small text-muted" style="font-size: 0.75rem;">
+                                            @review.CreatedAt.ToString("dd.MM.yyyy")
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if (authorRating > 0) //wyświetlanie oceny wystawionej przez autora recenzji
+                                {
+                                    <div class="review-rating-badge-neon" title="Ocena użytkownika">
+                                        <i class="bi bi-star-fill"></i>
+                                        <span>@authorRating.ToString("0.#")</span>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="review-content">
+                                @review.Content
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top" style="border-color: rgba(255,255,255,0.05) !important;">
+                                <div class="fw-bold @scoreColor d-flex align-items-center gap-2" style="font-size: 0.9rem;">
+                                    <i class="bi bi-hand-thumbs-up-fill"></i> @score
+                                </div>
+
+                                <a asp-controller="Reviews" asp-action="Index"
+                                   asp-route-gameId="@Model.IgdbGameId"
+                                   asp-route-gameName="@Model.Name"
+                                   class="btn btn-sm btn-ghost-cancel">
+                                    CZYTAJ
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="glass-panel text-center py-5"> @* panel wyświetlany przy braku recenzji *@
+                <i class="bi bi-chat-square-quote display-3 mb-3 d-block" style="color: var(--neon-cyan); opacity: 0.3;"></i>
+                <h5 class="text-white">Cisza w eterze...</h5>
+                <p class="text-muted">Nikt jeszcze nie napisał recenzji. Bądź pierwszy!</p>
+                <a asp-controller="Reviews" asp-action="Index" asp-route-gameId="@Model.IgdbGameId" asp-route-gameName="@Model.Name" class="btn btn-neon-cyan mt-3">
+                    <i class="bi bi-pencil-square me-2"></i> Napisz recenzję
+                </a>
+            </div>
+        }
+    </div>
+</div>

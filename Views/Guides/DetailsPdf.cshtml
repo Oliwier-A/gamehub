@@ -1,0 +1,77 @@
+﻿@using praca_dyplomowa_zesp.Models.ViewModels.Guides
+@model GuideDetailsViewModel
+
+@{
+    Layout = null; //brak ukladu dla generowanego pliku pdf
+
+    string bgImageUrl = Model.Guide.CoverImage != null
+        ? $"data:{Model.Guide.CoverImageContentType};base64,{Convert.ToBase64String(Model.Guide.CoverImage)}"
+        : ""; //konwersja obrazu okladki na base64 dla poprawnego wyswietlania w pdf
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>@Model.Guide.Title</title>
+
+    <link rel="stylesheet" href="~/css/site.css" /> @* zaladowanie stylow dla dokumentu pdf *@
+</head>
+<body class="pdf-document">
+
+    <div class="container">
+        <div class="header-section">
+            <h1 class="guide-title">@Model.Guide.Title</h1>
+        </div>
+
+        @if (!string.IsNullOrEmpty(bgImageUrl)) //wyswietlanie okladki jesli istnieje
+        {
+            <div class="cover-image-container">
+                <img src="@bgImageUrl" alt="Cover Image" />
+            </div>
+        }
+
+        <table class="meta-table">
+            @* tabela z glownymi informacjami o poradniku *@
+            <tr>
+                <td width="33%">
+                    <span class="meta-label">AUTOR</span>
+                    <div class="meta-value">@Model.Guide.User?.UserName</div>
+                </td>
+                <td width="33%">
+                    <span class="meta-label">DATA PUBLIKACJI</span>
+                    <div class="meta-value">@Model.Guide.CreatedAt.ToString("dd.MM.yyyy")</div>
+                </td>
+                <td width="33%">
+                    <span class="meta-label">OCENA</span>
+                    <div class="meta-value">
+                        @(Model.Guide.IsApproved ? $"{Model.AverageRating:0.0} / 5.0" : "---") @* warunkowe wyswietlanie sredniej oceny *@
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        @if (!string.IsNullOrEmpty(Model.Guide.Description))
+        {
+            <div class="description-box">@Model.Guide.Description</div>
+        }
+
+        <div class="content">
+            @if (!string.IsNullOrEmpty(Model.Guide.Content))
+            {
+                @Html.Raw(Model.Guide.Content) @* renderowanie tresci poradnika z formatowaniem html *@
+            }
+            else
+            {
+                <div style="text-align: center; color: #999;">[Brak treści]</div>
+            }
+        </div>
+
+        <div class="footer">
+            @* stopka dokumentu *@
+            Dokument wygenerowany z systemu GameHub &bull; @DateTime.Now.ToString("dd.MM.yyyy HH:mm") <br />
+            ID: @Model.Guide.Id
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,151 @@
+﻿@model praca_dyplomowa_zesp.Models.Ticket
+
+@{
+    ViewData["Title"] = "Nowe Zgłoszenie";
+}
+
+<div class="container mt-5 main-container fade-in-up">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <div class="glass-panel p-5 position-relative" style="border-top: 4px solid var(--neon-purple);">
+
+                <h2 class="text-neon-title text-center mb-4" style="letter-spacing: 2px;">
+                    <i class="fas fa-headset me-3 text-neon-cyan"></i>CENTRUM WSPARCIA
+                </h2>
+
+                <p class="text-center text-muted mb-5">
+                    Wypełnij formularz poniżej. Nasz zespół netrunnerów zajmie się Twoim zgłoszeniem tak szybko, jak to możliwe.
+                </p>
+
+                <form asp-action="Create" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-neon alert-neon-danger mb-4"></div>
+
+                    <div class="form-floating mb-4">
+                        <input asp-for="Title" class="form-control form-control-tech fs-5 fw-bold text-white" placeholder="Temat" />
+                        <label asp-for="Title" class="text-neon-purple">TEMAT ZGŁOSZENIA</label>
+                        <span asp-validation-for="Title" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <div class="form-floating mb-4">
+                        <textarea asp-for="Content" id="contentInput" class="form-control form-control-tech" placeholder="Opis" style="height: 200px; resize: none;"></textarea>
+                        <label asp-for="Content" class="text-muted">OPIS PROBLEMU (CTRL+V ABY WKLEIĆ OBRAZ)</label>
+                        <span asp-validation-for="Content" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="text-white-50 small text-uppercase fw-bold mb-2">Załączniki (Opcjonalnie)</label>
+
+                        <div class="file-upload-zone p-4 text-center" onclick="document.getElementById('attachmentInput').click()" style="cursor: pointer;">
+                            <i class="fas fa-cloud-upload-alt text-neon-cyan fs-2 mb-2"></i>
+                            <div class="text-muted small">Kliknij lub przeciągnij pliki tutaj</div>
+                            <div class="text-white-50 small mt-1">Tylko pliki obrazkowe (JPG, PNG)</div>
+                        </div>
+
+                        <div id="previews" class="d-flex flex-wrap gap-3 mt-3 justify-content-center"></div>
+
+                        <input type="file" name="attachments" id="attachmentInput" class="d-none" multiple accept="image/*" />
+                    </div>
+
+                    <div class="d-grid gap-3 d-md-flex justify-content-md-center pt-3">
+                        <a asp-action="Index" class="btn btn-ghost-cancel border border-secondary px-5 py-2">
+                            ANULUJ
+                        </a>
+                        <button type="submit" class="btn btn-neon-primary px-5 py-2 fw-bold">
+                            <i class="fas fa-paper-plane me-2"></i> WYŚLIJ ZGŁOSZENIE
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        //użycie DataTransfer pozwala na modyfikację listy plików, która w samym input.files jest tylko do odczytu
+        const dt = new DataTransfer();
+        const attachmentInput = document.getElementById('attachmentInput');
+        const previewsDiv = document.getElementById('previews');
+
+        function isImage(file) {
+            return file.type.startsWith('image/');
+        }
+
+        attachmentInput.addEventListener('change', function(){
+            let invalidFiles = false;
+
+            for(let i = 0; i < this.files.length; i++){
+                const file = this.files[i];
+
+                if (isImage(file)) {
+                    dt.items.add(file);
+                } else {
+                    invalidFiles = true;
+                }
+            }
+
+            if (invalidFiles) {
+                alert("Niektóre pliki zostały pominięte. Dozwolone są tylko obrazy.");
+            }
+
+            updateFiles();
+        });
+
+        //przechwytywanie plików graficznych bezpośrednio ze schowka użytkownika
+        document.getElementById('contentInput').addEventListener('paste', function (e) {
+            var items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (var index in items) {
+                var item = items[index];
+                if (item.kind === 'file') {
+                    var blob = item.getAsFile();
+
+                    if (isImage(blob)) {
+                        dt.items.add(blob);
+                        updateFiles();
+                    } else {
+                        alert("Wklejony plik nie jest obrazem.");
+                    }
+                }
+            }
+        });
+
+        function updateFiles(){
+            attachmentInput.files = dt.files;
+            renderPreviews();
+        }
+
+        function renderPreviews(){
+            previewsDiv.innerHTML = '';
+            for(let i = 0; i < dt.files.length; i++){
+                const file = dt.files[i];
+                const reader = new FileReader();
+
+                //asynchroniczne generowanie miniatury w formacie Base64
+                reader.onload = function(e){
+                    const div = document.createElement('div');
+                    div.className = 'attachment-preview-wrapper';
+
+                    div.innerHTML = `
+                        <img src="${e.target.result}" class="attachment-preview-img" style="width: 80px; height: 80px;" />
+                        <button type="button" class="btn-remove-attachment" onclick="removeFile(${i})" title="Usuń">
+                            <i class="fas fa-times-circle fs-5 text-white"></i>
+                        </button>
+                    `;
+                    previewsDiv.appendChild(div);
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        window.removeFile = function(index){
+            dt.items.remove(index);
+            updateFiles();
+        }
+    </script>
+}

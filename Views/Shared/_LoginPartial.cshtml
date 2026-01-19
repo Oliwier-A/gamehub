@@ -1,0 +1,120 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using praca_dyplomowa_zesp.Models.Modules.Users
+@using praca_dyplomowa_zesp.Models
+
+@inject SignInManager<User> SignInManager
+@inject UserManager<User> UserManager
+
+<ul class="navbar-nav align-items-center">
+    @if (SignInManager.IsSignedIn(User)) //sprawdzanie czy uzytkownik jest zalogowany
+    {
+        var user = await UserManager.GetUserAsync(User);
+
+        if (user != null)
+        {
+            var isAdmin = await UserManager.IsInRoleAsync(user, "Admin"); //weryfikacja roli administratora
+            var isMod = await UserManager.IsInRoleAsync(user, "Moderator"); //weryfikacja roli moderatora
+
+            string borderColor = "var(--neon-cyan)"; //domyslny kolor obramowania awatara
+            if (isAdmin) { borderColor = "var(--neon-red)"; } //zmiana koloru dla administratora
+            else if (isMod) { borderColor = "var(--neon-green)"; } //zmiana koloru dla moderatora
+
+            bool hasSteam = !string.IsNullOrEmpty(user.SteamId); //sprawdzenie polaczenia z platforma steam
+
+            if (!hasSteam) //wyswietlanie zachety do polaczenia konta
+            {
+                <li class="nav-item me-3 d-none d-md-block">
+                    <a asp-controller="Profile" asp-action="Index" class="btn btn-sm btn-steam-connect" title="Połącz Steam" style="padding: 5px 15px; font-size: 0.7rem;">
+                        <i class="bi bi-steam me-2"></i> POŁĄCZ STEAM
+                    </a>
+                </li>
+            }
+
+            <li class="nav-item dropdown">
+                @* rozwijane menu profilu uzytkownika *@
+                <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <div style="position: relative;">
+                        @if (user.ProfilePicture != null) //wyswietlanie wlasnego awatara uzytkownika
+                        {
+                            <img src="@Url.Action("GetAvatar", "Profile", new { id = user.Id, v = DateTime.Now.Ticks })" alt="Avatar"
+                                 class="rounded-circle"
+                                 style="width: 35px; height: 35px; object-fit: cover; border: 2px solid @borderColor; box-shadow: 0 0 10px @borderColor;" />
+                        }
+                        else //wyswietlanie domyslnej ikony gracza
+                        {
+                            <img src="~/uploads/avatars/default_avatar.png" alt="Avatar"
+                                 class="rounded-circle"
+                                 style="width: 35px; height: 35px; object-fit: cover; border: 2px solid @borderColor; box-shadow: 0 0 10px @borderColor;" />
+                        }
+                    </div>
+                    <span class="d-none d-sm-block text-uppercase" style="font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: 1px;">
+                        @user.UserName
+                    </span>
+                </a>
+
+                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark custom-drop" aria-labelledby="userDropdown">
+                    <li>
+                        <div class="px-3 py-2">
+                            <small class="text-muted d-block text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">Zalogowano jako</small>
+                            <span class="fw-bold text-white" style="font-family: 'Orbitron', sans-serif;">@user.UserName</span>
+                        </div>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+
+                    @if (isAdmin)
+                    {
+                        <li><a class="dropdown-item text-danger" asp-controller="Admin" asp-action="Index"><i class="fas fa-user-shield me-2"></i> Panel Admina</a></li>
+                    }
+                    @if (isMod)
+                    {
+                        <li><a class="dropdown-item text-neon-green" asp-controller="Admin" asp-action="Index"><i class="fas fa-user-check me-2"></i> Panel Moderatora</a></li>
+                    }
+                    @if (isAdmin || isMod)
+                    {
+                        <li><hr class="dropdown-divider"></li>
+                    }
+
+                    <li><a class="dropdown-item text-neon-cyan" asp-controller="Profile" asp-action="Index"><i class="bi bi-person-circle me-2"></i> Mój Profil</a></li>
+                    <li><a class="dropdown-item text-neon-green" asp-controller="Library" asp-action="Index"><i class="bi bi-collection-play me-2"></i> Moja Biblioteka</a></li>
+
+                    @if (hasSteam)
+                    {
+                        <li><a class="dropdown-item text-neon-cyan" asp-controller="Profile" asp-action="SteamLibrary"><i class="bi bi-steam me-2"></i> Biblioteka Steam</a></li>
+                    }
+
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-warning" asp-controller="Tickets" asp-action="Index"><i class="fas fa-headset me-2"></i> Zgłoś problem</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form class="form-inline" asp-controller="Account" asp-action="Logout" asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString">
+                            <button type="submit" class="dropdown-item text-danger fw-bold w-100 text-start"><i class="bi bi-box-arrow-right me-2"></i> WYLOGUJ</button>
+                        </form>
+                    </li>
+                </ul>
+            </li>
+        }
+        else //obsluga bledu sesji gdy uzytkownik nie istnieje w bazie (Ghost User)
+        {
+            <li class="nav-item">
+                <form class="form-inline" asp-controller="Account" asp-action="Logout" asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString">
+                    <button type="submit" class="btn btn-sm btn-danger fw-bold"><i class="fas fa-exclamation-triangle me-1"></i> NAPRAW BŁĄD SESJI</button>
+                </form>
+            </li>
+        }
+    }
+    else //widok dla uzytkownika niezalogowanego
+    {
+        <li class="nav-item">
+            <a class="nav-link" href="#" onclick="openAuthModal('login'); return false;">
+                @* wywolanie modala logowania *@
+                ZALOGUJ
+            </a>
+        </li>
+        <li class="nav-item ms-2 no-lift">
+            <a class="btn btn-sm btn-neon-primary fw-bold" href="#" onclick="openAuthModal('register'); return false;" style="padding: 6px 20px;">
+                @* wywolanie modala rejestracji *@
+                <i class="bi bi-person-plus me-1"></i> REJESTRACJA
+            </a>
+        </li>
+    }
+</ul>
