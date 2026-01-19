@@ -89,7 +89,7 @@ using (var scope = app.Services.CreateScope())
             }
         }
 
-        // Automatyczne tworzenie konta administratora przy pierwszym uruchomieniu
+        // !Automatyczne tworzenie konta administratora przy pierwszym uruchomieniu!
         var adminUser = await userManager.FindByNameAsync("Admin");
         if (adminUser == null)
         {

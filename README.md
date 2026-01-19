@@ -69,5 +69,6 @@ Podczas pierwszego uruchomienia aplikacja sprawdza istnienie konta administrator
 * **Login:** `Admin`
 * **Hasło:** `Admin890`
 
+(Dane te można zmienić po zalogowaniu w panelu uzytkownika lub przez Program.cs).
 ---
 Autorzy: **Oliwier Ancutko** i **Patrycja Chocko**
