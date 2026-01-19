@@ -1,31 +1,29 @@
 ﻿@using praca_dyplomowa_zesp.Models
 
 <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
-    @* kontener modala logowania *@
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 550px;">
         <div class="modal-content modal-neon">
             <div class="modal-header border-bottom-0 pb-0">
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4 p-sm-5 pt-0">
+            <div class="modal-body p-4 p-sm-4 pt-0">
 
-                <h2 class="text-neon-title mb-4">Logowanie</h2>
+                <h2 class="text-neon-title mb-3">Logowanie</h2>
 
                 <form asp-controller="Account" asp-action="Login" method="post">
-                    @* formularz logowania uzytkownika *@
-                    <input type="hidden" name="returnUrl" class="current-url-input" /> @* przekazywanie biezacego adresu do przekierowania *@
+                    <input type="hidden" name="returnUrl" class="current-url-input" />
 
-                    <div class="form-floating mb-3">
+                    <div class="form-floating mb-2">
                         <input name="Login" type="text" class="form-control form-control-tech" placeholder="Login" required />
                         <label>Login</label>
                     </div>
 
-                    <div class="form-floating mb-3">
+                    <div class="form-floating mb-2">
                         <input name="Password" type="password" class="form-control form-control-tech" placeholder="Hasło" required />
                         <label>Hasło</label>
                     </div>
 
-                    <div class="form-check mb-4">
+                    <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" name="RememberMe" value="true" id="loginRememberMe" />
                         <label class="form-check-label text-muted small pt-1" for="loginRememberMe">
                             Zapamiętaj mnie
@@ -39,26 +37,24 @@
                     </div>
                 </form>
 
-                <div class="auth-separator">LUB</div>
+                <div class="auth-separator my-2">LUB</div>
 
-                <form asp-controller="Account" asp-action="LoginWithSteam" method="post" class="d-grid mb-2">
-                    @* przycisk logowania przez steam *@
+                <form asp-controller="Account" asp-action="LoginWithSteam" method="post" class="d-flex justify-content-center mb-2">
                     <input type="hidden" name="returnUrl" class="current-url-input" />
-                    <button type="submit" class="btn btn-steam-connect btn-lg justify-content-center gap-2">
-                        <i class="bi bi-steam fs-5"></i>
-                        <span>Zaloguj przez Steam</span>
+                    <button type="submit" class="btn p-0 border-0 bg-transparent shadow-none">
+                        <img src="~/uploads/steam/sits_01.png" alt="Zaloguj przez Steam" class="img-fluid" style="max-height: 40px;" />
                     </button>
                 </form>
 
-                <div class="text-center mb-3">
+                <div class="text-center mb-2">
                     <p class="text-muted" style="font-size: 0.65rem; line-height: 1.1; opacity: 0.7;">
-                        This site is not associated with Valve Corporation. Steam and the Steam logo are trademarks of Valve Corporation.
+                        This site is not associated with Valve Corporation.
                     </p>
                 </div>
 
-                <div class="text-center mt-3">
+                <div class="text-center mt-2">
                     <p class="text-muted small mb-1">Brak konta?</p>
-                    <a href="#" onclick="switchToRegister()" class="btn btn-low-tier fw-bold" style="color: #fff;">
+                    <a href="#" onclick="switchToRegister()" class="btn btn-low-tier fw-bold py-1" style="color: #fff;">
                         ZAREJESTRUJ SIĘ TERAZ
                     </a>
                 </div>
@@ -68,49 +64,47 @@
 </div>
 
 <div class="modal fade" id="registerModal" tabindex="-1" aria-hidden="true">
-    @* kontener modala rejestracji *@
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 550px;">
         <div class="modal-content modal-neon">
             <div class="modal-header border-bottom-0 pb-0">
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4 p-sm-5 pt-0">
+            <div class="modal-body p-4 p-sm-4 pt-0">
 
-                <h2 class="text-neon-title mb-4">Rejestracja</h2>
+                <h2 class="text-neon-title mb-3">Rejestracja</h2>
 
                 <form asp-controller="Account" asp-action="Register" method="post">
-                    @* formularz zakladania nowego konta *@
                     <input type="hidden" name="returnUrl" class="current-url-input" />
 
-                    <div class="form-floating mb-3">
+                    <div class="form-floating mb-2">
                         <input name="Login" type="text" class="form-control form-control-tech" placeholder="Login" required />
                         <label>Login (ID)</label>
                     </div>
 
-                    <div class="form-floating mb-3">
+                    <div class="form-floating mb-2">
                         <input name="UserName" type="text" class="form-control form-control-tech" placeholder="Nick" required />
                         <label>Nazwa gracza</label>
                     </div>
 
-                    <div class="form-floating mb-3">
+                    <div class="form-floating mb-2">
                         <input name="Password" type="password" class="form-control form-control-tech" placeholder="Hasło" required />
                         <label>Hasło</label>
                     </div>
 
-                    <div class="form-floating mb-4">
+                    <div class="form-floating mb-3">
                         <input name="ConfirmPassword" type="password" class="form-control form-control-tech" placeholder="Powtórz hasło" required />
                         <label>Powtórz hasło</label>
                     </div>
 
-                    <div class="d-grid mb-4">
+                    <div class="d-grid mb-3">
                         <button type="submit" class="btn btn-neon-green btn-lg">
                             Stwórz konto
                         </button>
                     </div>
 
-                    <div class="text-center mt-3">
+                    <div class="text-center mt-2">
                         <p class="text-muted small mb-1">Masz już ID?</p>
-                        <a href="#" onclick="switchToLogin()" class="btn btn-low-tier fw-bold" style="color: #fff;">
+                        <a href="#" onclick="switchToLogin()" class="btn btn-low-tier fw-bold py-1" style="color: #fff;">
                             ZALOGUJ SIĘ TUTAJ
                         </a>
                     </div>
@@ -121,7 +115,7 @@
 </div>
 
 <script>
-    function openAuthModal(modalType) { @* logika przelaczania miedzy modalem logowania i rejestracji *@
+    function openAuthModal(modalType) {
         var loginModalEl = document.getElementById('loginModal');
         var registerModalEl = document.getElementById('registerModal');
 
@@ -157,7 +151,7 @@
     function switchToRegister() { openAuthModal('register'); }
     function switchToLogin() { openAuthModal('login'); }
 
-    document.addEventListener("DOMContentLoaded", function() { @* automatyczne ustawianie adresu powrotnego po zaladowaniu dom *@
+    document.addEventListener("DOMContentLoaded", function() {
         var currentUrl = window.location.pathname + window.location.search;
         var inputs = document.querySelectorAll('.current-url-input');
         inputs.forEach(function(input) { input.value = currentUrl; });

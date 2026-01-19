@@ -23,7 +23,7 @@ GameHub to aplikacja webowa stworzona w technologii ASP.NET Core MVC, służąca
 
 Aby uruchomić projekt lokalnie, potrzebujesz:
 1.  [.NET SDK](https://dotnet.microsoft.com/download) (wersja 8.0 lub nowsza).
-2.  Klucz API [IGDB (Twitch Developer)](https://dev.twitch.tv/).
+2.  Klucz API [IGDB (Twitch Developer)](https://api-docs.igdb.com/#getting-started).
 3.  Klucz API [Steam Web API Key](https://steamcommunity.com/dev/apikey).
 
 ## Instalacja i Uruchomienie
