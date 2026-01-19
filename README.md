@@ -30,10 +30,10 @@ Aby uruchomić projekt lokalnie, potrzebujesz:
 
 1.  **Sklonuj repozytorium:**
     ```bash
-    git clone 
-    cd repo
+    git clone https://github.com/Oliwier-A/gamehub
+    cd gamehub
     ```
-    W przypadku posiadania kodu w postaci archiwum ZIP (lub folderu na dysku), pomiń krok klonowania.
+    W przypadku posiadania kodu w postaci archiwum ZIP, pomiń krok klonowania.
 
 2.  **Konfiguracja appsettings:**
     Otwórz plik `appsettings.json` i uzupełnij klucze API:
