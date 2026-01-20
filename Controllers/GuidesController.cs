@@ -373,13 +373,19 @@ namespace praca_dyplomowa_zesp.Controllers
         #region Tip Management
 
         [HttpPost]
-        [Authorize]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddTip(long gameId, string content)
         {
+            // 1. Sprawdzenie logowania
+            if (!User.Identity.IsAuthenticated)
+            {
+                return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Index", new { gameId = gameId }) });
+            }
+
             if (string.IsNullOrWhiteSpace(content)) return RedirectToAction(nameof(Index), new { gameId });
 
             var user = await _userManager.GetUserAsync(User);
+
             if (IsUserMuted(user))
             {
                 TempData["Error"] = $"Jesteś wyciszony do {user.BanEnd?.ToString("dd.MM.yyyy HH:mm")}.";
@@ -441,7 +447,9 @@ namespace praca_dyplomowa_zesp.Controllers
         public async Task<IActionResult> ToggleTipReaction(int tipId, bool isUpvote)
         {
             var user = await _userManager.GetUserAsync(User);
-            if (user == null || IsUserMuted(user)) return Forbid();
+            if (user == null) return Challenge();
+
+            if (IsUserMuted(user)) return Forbid();
 
             var tip = await _context.Tips.FindAsync(tipId);
             if (tip == null) return NotFound();

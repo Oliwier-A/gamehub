@@ -2,25 +2,22 @@
 
 namespace praca_dyplomowa_zesp.Models.ViewModels.Users
 {
-    public class RegisterViewModel //model danych do walidacji rejestracji nowego użytkownika
+    public class RegisterViewModel
     {
         [Required(ErrorMessage = "Login jest wymagany.")]
-        [StringLength(16, MinimumLength = 3, ErrorMessage = "Login musi mieć od 3 do 16 znaków.")]
         public string Login { get; set; }
 
-        [Required(ErrorMessage = "Nazwa użytkownika jest wymagana.")]
-        [Display(Name = "Nazwa użytkownika")]
+        [Required(ErrorMessage = "Nazwa gracza jest wymagana.")]
         public string UserName { get; set; }
 
         [Required(ErrorMessage = "Hasło jest wymagane.")]
+        [MinLength(8, ErrorMessage = "Hasło musi mieć co najmniej 8 znaków.")]
+        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$", ErrorMessage = "Hasło musi zawierać co najmniej jedną małą literę, jedną dużą literę i cyfrę.")]
         [DataType(DataType.Password)]
-        [StringLength(100, ErrorMessage = "{0} musi mieć co najmniej {2} i maksymalnie {1} znaków.", MinimumLength = 8)]
-        [Display(Name = "Hasło")]
         public string Password { get; set; }
 
         [DataType(DataType.Password)]
-        [Display(Name = "Potwierdź hasło")]
-        [Compare("Password", ErrorMessage = "Hasła nie są zgodne.")]
+        [Compare("Password", ErrorMessage = "Hasła nie są identyczne.")]
         public string ConfirmPassword { get; set; }
     }
 }

@@ -19,7 +19,6 @@
     bool isAuthor = User.Identity.IsAuthenticated && Model.Guide.User?.UserName == User.Identity.Name;
     bool isAdminOrMod = User.IsInRole("Admin") || User.IsInRole("Moderator");
 
-    // --- LOGIKA STATUSÓW ---
     bool isRejected = Model.Guide.IsRejected;
     bool isDraft = Model.Guide.IsDraft;
     bool isDeleted = Model.Guide.IsDeleted;
@@ -69,8 +68,6 @@
 }
 
 <div class="container mt-4 main-container fade-in-up">
-
-    @* USUNIĘTO LOKALNE POWIADOMIENIA (TempData) - są obsługiwane globalnie w _Layout.cshtml *@
 
     <div class="d-flex justify-content-between align-items-center position-relative mb-4">
         <div>
@@ -178,7 +175,6 @@
 
                 @if (isDeleted)
                 {
-                    // PRZYPADEK 1: Poradnik jest już w koszu (isAdminOrMod)
                     <form asp-controller="Admin" asp-action="RestoreGuide" method="post" class="d-inline">
                         <input type="hidden" name="id" value="@Model.Guide.Id" />
                         <button type="submit" class="btn btn-neon-green btn-sm px-4">PRZYWRÓĆ</button>
@@ -190,14 +186,12 @@
                 }
                 else if (isApproved)
                 {
-                    // PRZYPADEK 2: Poradnik opublikowany -> Do kosza (Soft Delete)
                     <button type="button" class="btn btn-danger-custom btn-sm px-4" onclick="openSoftDeleteModal()">
                         DO KOSZA
                     </button>
                 }
                 else
                 {
-                    // PRZYPADEK 3: Szkic / Odrzucony / Oczekujący -> Usuń trwale (Hard Delete)
                     <button type="button" class="btn btn-danger-custom btn-sm px-4" onclick="openDeletePermModal()">
                         USUŃ
                     </button>
@@ -251,7 +245,14 @@
             }
             else
             {
-                <p class="text-muted small m-0">Zaloguj się, aby przesłać dane oceny.</p>
+                <div class="d-flex flex-column align-items-center gap-2">
+                    <span class="text-muted small m-0">Zaloguj się, aby przesłać dane oceny.</span>
+                    <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path"
+                       class="btn btn-sm btn-ghost-cancel py-1 px-3 text-uppercase"
+                       style="font-size: 0.7rem; border-color: rgba(255,255,255,0.15);">
+                        <i class="fas fa-sign-in-alt me-1"></i> Zaloguj
+                    </a>
+                </div>
             }
         </div>
 
@@ -449,18 +450,27 @@
                 }
                 else
                 {
-                    <div class="text-center text-muted py-4">Brak komentarzy. Bądź pierwszy!</div>
+                    <div class="text-center text-muted py-4 d-flex flex-column align-items-center gap-2">
+                        <span>Brak komentarzy. Bądź pierwszy!</span>
+
+                        @if (!User.Identity.IsAuthenticated)
+                        {
+                            <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path"
+                               class="btn btn-sm btn-ghost-cancel py-1 px-3 text-uppercase"
+                               style="font-size: 0.7rem; border-color: rgba(255,255,255,0.15);">
+                                <i class="fas fa-sign-in-alt me-1"></i> Zaloguj się, aby dodać
+                            </a>
+                        }
+                    </div>
                 }
             </div>
         </div>
     }
 </div>
 
-@* --- MODALE (SYSTEMOWE) --- *@
 
 @if (isAdminOrMod)
 {
-    @* Modal Odrzucania (tylko dla moderatorów) *@
     <div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content modal-neon modal-compact" style="border-color: var(--neon-purple); box-shadow: 0 0 20px color-mix(in srgb, var(--neon-purple) 20%, transparent);">
@@ -474,7 +484,7 @@
                     <div class="modal-body pt-3">
                         <input type="hidden" name="id" value="@Model.Guide.Id" />
                         <div class="form-floating">
-                            <textarea class="form-control form-control-tech" name="reason" style="height: 150px; resize: none;" required></textarea>
+                            <textarea class="form-control form-control-tech" name="reason" style="height: 150px; resize: none;" placeholder="Wpisz powód..." required></textarea>
                             <label>Wpisz powód odrzucenia / instrukcje...</label>
                         </div>
                     </div>
@@ -488,7 +498,6 @@
     </div>
 }
 
-@* Modal Miękkiego Usuwania (Soft Delete) - Przenoszenie do kosza *@
 <div class="modal fade" id="deleteSoftModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-neon modal-compact" style="border-color: var(--neon-red); box-shadow: 0 0 20px color-mix(in srgb, var(--neon-red) 20%, transparent);">
@@ -511,7 +520,6 @@
     </div>
 </div>
 
-@* Modal Trwałego Usuwania (Hard Delete) - Usuwanie na zawsze *@
 <div class="modal fade" id="deletePermModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-neon modal-compact modal-danger-neon" style="border-color: var(--neon-red);">
@@ -565,7 +573,6 @@
     </style>
 
     <script>
-        // Funkcje otwierające modale z przeniesieniem do BODY (Fix z-index)
         function openSoftDeleteModal() {
             var modalElement = document.getElementById('deleteSoftModal');
             document.body.appendChild(modalElement);

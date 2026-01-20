@@ -147,6 +147,13 @@ namespace praca_dyplomowa_zesp.Controllers
                 return View(model);
             }
 
+            if (await _context.Users.AnyAsync(u => u.UserName == model.UserName))
+            {
+                ModelState.AddModelError(nameof(model.UserName), "Ta nazwa jest już zajęta.");
+                TempData["Error"] = "Ta nazwa jest już zajęta.";
+                return View(model);
+            }
+
             var user = new User
             {
                 UserName = model.UserName,

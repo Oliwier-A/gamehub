@@ -16,16 +16,18 @@
 
                     <form asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
 
+                        <div asp-validation-summary="ModelOnly" class="mb-4"></div>
+
                         <div class="form-floating mb-4">
                             <input asp-for="Login" class="form-control form-control-tech" placeholder="Login" required />
                             <label asp-for="Login">Login</label>
-                            <span asp-validation-for="Login" class="text-danger small mt-1 d-block"></span>
+                            <span asp-validation-for="Login"></span>
                         </div>
 
                         <div class="form-floating mb-4">
                             <input asp-for="Password" class="form-control form-control-tech" type="password" placeholder="Hasło" required />
                             <label asp-for="Password">Hasło</label>
-                            <span asp-validation-for="Password" class="text-danger small mt-1 d-block"></span>
+                            <span asp-validation-for="Password"></span>
                         </div>
 
                         <div class="form-check mb-4">
@@ -73,4 +75,9 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <style>
+        .alert, .alert-danger, .toast-container, .notification-bar {
+            display: none !important;
+        }
+    </style>
 }

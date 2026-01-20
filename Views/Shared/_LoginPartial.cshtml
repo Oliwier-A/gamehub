@@ -6,24 +6,24 @@
 @inject UserManager<User> UserManager
 
 <ul class="navbar-nav align-items-center">
-    @if (SignInManager.IsSignedIn(User)) //sprawdzanie czy uzytkownik jest zalogowany
+    @if (SignInManager.IsSignedIn(User))
     {
         var user = await UserManager.GetUserAsync(User);
 
         if (user != null)
         {
-            var isAdmin = await UserManager.IsInRoleAsync(user, "Admin"); //weryfikacja roli administratora
-            var isMod = await UserManager.IsInRoleAsync(user, "Moderator"); //weryfikacja roli moderatora
+            var isAdmin = await UserManager.IsInRoleAsync(user, "Admin");
+            var isMod = await UserManager.IsInRoleAsync(user, "Moderator");
 
-            string borderColor = "var(--neon-cyan)"; //domyslny kolor obramowania awatara
-            if (isAdmin) { borderColor = "var(--neon-red)"; } //zmiana koloru dla administratora
-            else if (isMod) { borderColor = "var(--neon-green)"; } //zmiana koloru dla moderatora
+            string borderColor = "var(--neon-cyan)";
+            if (isAdmin) { borderColor = "var(--neon-red)"; }
+            else if (isMod) { borderColor = "var(--neon-green)"; }
 
-            bool hasSteam = !string.IsNullOrEmpty(user.SteamId); //sprawdzenie polaczenia z platforma steam
+            bool hasSteam = !string.IsNullOrEmpty(user.SteamId);
 
-            if (!hasSteam) //wyswietlanie zachety do polaczenia konta
+            if (!hasSteam)
             {
-                <li class="nav-item me-3 d-none d-md-block">
+                <li class="nav-item me-3 d-none d-md-block no-lift">
                     <a asp-controller="Profile" asp-action="Index" class="btn btn-sm btn-steam-connect" title="Połącz Steam" style="padding: 5px 15px; font-size: 0.7rem;">
                         <i class="bi bi-steam me-2"></i> POŁĄCZ STEAM
                     </a>
@@ -31,16 +31,15 @@
             }
 
             <li class="nav-item dropdown">
-                @* rozwijane menu profilu uzytkownika *@
                 <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <div style="position: relative;">
-                        @if (user.ProfilePicture != null) //wyswietlanie wlasnego awatara uzytkownika
+                        @if (user.ProfilePicture != null)
                         {
                             <img src="@Url.Action("GetAvatar", "Profile", new { id = user.Id, v = DateTime.Now.Ticks })" alt="Avatar"
                                  class="rounded-circle"
                                  style="width: 35px; height: 35px; object-fit: cover; border: 2px solid @borderColor; box-shadow: 0 0 10px @borderColor;" />
                         }
-                        else //wyswietlanie domyslnej ikony gracza
+                        else
                         {
                             <img src="~/uploads/avatars/default_avatar.png" alt="Avatar"
                                  class="rounded-circle"
@@ -93,7 +92,7 @@
                 </ul>
             </li>
         }
-        else //obsluga bledu sesji gdy uzytkownik nie istnieje w bazie (Ghost User)
+        else
         {
             <li class="nav-item">
                 <form class="form-inline" asp-controller="Account" asp-action="Logout" asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString">
@@ -102,17 +101,15 @@
             </li>
         }
     }
-    else //widok dla uzytkownika niezalogowanego
+    else
     {
         <li class="nav-item">
             <a class="nav-link" href="#" onclick="openAuthModal('login'); return false;">
-                @* wywolanie modala logowania *@
                 ZALOGUJ
             </a>
         </li>
         <li class="nav-item ms-2 no-lift">
             <a class="btn btn-sm btn-neon-primary fw-bold" href="#" onclick="openAuthModal('register'); return false;" style="padding: 6px 20px;">
-                @* wywolanie modala rejestracji *@
                 <i class="bi bi-person-plus me-1"></i> REJESTRACJA
             </a>
         </li>

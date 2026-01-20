@@ -11,6 +11,7 @@ using praca_dyplomowa_zesp.Services;
 using praca_dyplomowa_zesp.Data;
 using praca_dyplomowa_zesp.Models.Modules.Users;
 using praca_dyplomowa_zesp.Models.ViewModels.Games;
+using System.Collections.Concurrent;
 
 namespace praca_dyplomowa_zesp.Controllers
 {
@@ -30,7 +31,6 @@ namespace praca_dyplomowa_zesp.Controllers
             UserManager<User> userManager,
             SteamApiService steamService)
         {
-            //przypisanie wstrzyknietych serwisow do pol klasy
             _context = context;
             _igdbClient = igdbClient;
             _userManager = userManager;
@@ -41,17 +41,16 @@ namespace praca_dyplomowa_zesp.Controllers
 
         [HttpGet]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public async Task<IActionResult> Index(string? searchString, string statusFilter = "all", int page = 1)
+        public async Task<IActionResult> Index(string? searchString, string statusFilter = "all", int page = 1, int pageSize = 60)
         {
             var currentUserId = GetCurrentUserId();
+            var user = await _userManager.GetUserAsync(User);
 
-            //pobranie kolekcji gier uzytkownika posortowanej od ostatnio uzywanych
             var query = _context.GamesInLibraries
                 .Where(g => g.UserId == currentUserId)
                 .OrderByDescending(g => g.LastAccessed)
                 .AsQueryable();
 
-            //filtrowanie rekordow na podstawie postepu fabularnego
             query = statusFilter switch
             {
                 "completed" => query.Where(g => g.CurrentUserStoryProgressPercent == 100),
@@ -64,9 +63,10 @@ namespace praca_dyplomowa_zesp.Controllers
             var finalGamesList = new List<MainLibraryViewModel>();
             int totalGames;
 
+            var gamesToUpdate = new ConcurrentBag<GameInLibrary>();
+
             if (!string.IsNullOrEmpty(searchString))
             {
-                //pobranie wszystkich identyfikatorow w celu filtracji po nazwie z api in-memory
                 var allIgdbIds = filteredDbList.Select(g => g.IgdbGameId).Distinct().ToList();
                 var allApiGames = await FetchApiGamesInBatches(allIgdbIds);
 
@@ -76,22 +76,72 @@ namespace praca_dyplomowa_zesp.Controllers
                 }).Where(g => g.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase)).ToList();
 
                 totalGames = allViewModels.Count;
-                finalGamesList = allViewModels.Skip((page - 1) * PageSize).Take(PageSize).ToList();
+                finalGamesList = allViewModels.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+                var gamesOnPageIds = finalGamesList.Select(v => v.DbId).ToList();
+                var dbGamesOnPage = filteredDbList.Where(g => gamesOnPageIds.Contains(g.Id)).ToList();
+
+                var pageIgdbIds = dbGamesOnPage.Select(g => g.IgdbGameId).ToList();
+                var localAchievementsFlat = await _context.UserAchievements
+                    .Where(ua => ua.UserId == currentUserId && pageIgdbIds.Contains(ua.IgdbGameId))
+                    .ToListAsync();
+
+                var tasks = dbGamesOnPage.Select(async dbGame =>
+                {
+                    var apiGame = allApiGames.FirstOrDefault(a => a.Id == dbGame.IgdbGameId);
+                    var gameLocalAchievements = localAchievementsFlat.Where(ua => ua.IgdbGameId == dbGame.IgdbGameId).ToList();
+
+                    string steamAppId = await ResolveSteamAppId(apiGame);
+
+                    int? newProgress = await CalculateProgressAsync(user?.SteamId, steamAppId, gameLocalAchievements);
+
+                    if (newProgress.HasValue && dbGame.CurrentUserStoryProgressPercent != newProgress.Value)
+                    {
+                        dbGame.CurrentUserStoryProgressPercent = newProgress.Value;
+                        gamesToUpdate.Add(dbGame);
+
+                        var vm = finalGamesList.FirstOrDefault(v => v.DbId == dbGame.Id);
+                        if (vm != null) vm.ProgressPercent = newProgress.Value;
+                    }
+                });
+
+                await Task.WhenAll(tasks);
             }
             else
             {
-                //optymalizacja: pobieranie danych z api tylko dla elementow na aktualnej stronie
                 totalGames = filteredDbList.Count;
-                var pagedDbList = filteredDbList.Skip((page - 1) * PageSize).Take(PageSize).ToList();
+                var pagedDbList = filteredDbList.Skip((page - 1) * pageSize).Take(pageSize).ToList();
                 var pageIgdbIds = pagedDbList.Select(g => g.IgdbGameId).Distinct().ToList();
 
                 var pageApiGames = new List<IGDBGameDtos>();
                 if (pageIgdbIds.Any())
                 {
                     var idsString = string.Join(",", pageIgdbIds);
-                    var queryApi = $"fields name, cover.url; where id = ({idsString}); limit 100;";
+                    var queryApi = $"fields name, cover.url, websites.url, websites.category, external_games.category, external_games.uid; where id = ({idsString}); limit 100;";
                     pageApiGames = await ExecuteIgdbQuery(queryApi);
                 }
+
+                var localAchievementsFlat = await _context.UserAchievements
+                    .Where(ua => ua.UserId == currentUserId && pageIgdbIds.Contains(ua.IgdbGameId))
+                    .ToListAsync();
+
+                var tasks = pagedDbList.Select(async dbGame =>
+                {
+                    var apiGame = pageApiGames.FirstOrDefault(a => a.Id == dbGame.IgdbGameId);
+                    var gameLocalAchievements = localAchievementsFlat.Where(ua => ua.IgdbGameId == dbGame.IgdbGameId).ToList();
+
+                    string steamAppId = await ResolveSteamAppId(apiGame);
+
+                    int? newProgress = await CalculateProgressAsync(user?.SteamId, steamAppId, gameLocalAchievements);
+
+                    if (newProgress.HasValue && dbGame.CurrentUserStoryProgressPercent != newProgress.Value)
+                    {
+                        dbGame.CurrentUserStoryProgressPercent = newProgress.Value;
+                        gamesToUpdate.Add(dbGame);
+                    }
+                });
+
+                await Task.WhenAll(tasks);
 
                 finalGamesList = pagedDbList.Select(dbGame => {
                     var apiGame = pageApiGames.FirstOrDefault(a => a.Id == dbGame.IgdbGameId);
@@ -99,11 +149,16 @@ namespace praca_dyplomowa_zesp.Controllers
                 }).ToList();
             }
 
+            if (!gamesToUpdate.IsEmpty)
+            {
+                await _context.SaveChangesAsync();
+            }
+
             return View(new UserLibraryIndexViewModel
             {
                 Games = finalGamesList,
                 CurrentPage = page,
-                TotalPages = (int)Math.Ceiling(totalGames / (double)PageSize),
+                TotalPages = (int)Math.Ceiling(totalGames / (double)pageSize),
                 SearchString = searchString,
                 StatusFilter = statusFilter
             });
@@ -568,6 +623,35 @@ namespace praca_dyplomowa_zesp.Controllers
             }
 
             return (finalAchievements, steamUnlockedIds, progress);
+        }
+
+        private async Task<int?> CalculateProgressAsync(string? steamId, string? steamAppId, List<UserAchievement> localAchievements)
+        {
+            if (string.IsNullOrEmpty(steamAppId)) return null;
+
+            var steamSchema = await _steamService.GetSchemaForGameAsync(steamAppId);
+            if (steamSchema == null || !steamSchema.Any()) return null;
+
+            var steamUnlockedIds = new List<string>();
+            if (!string.IsNullOrEmpty(steamId))
+            {
+                try
+                {
+                    var playerAchievements = await _steamService.GetGameAchievementsAsync(steamId, steamAppId);
+                    steamUnlockedIds = playerAchievements.Where(pa => pa.Achieved == 1).Select(pa => pa.ApiName).ToList();
+                }
+                catch
+                {
+                }
+            }
+            int unlockedCount = steamSchema.Count(schema =>
+                steamUnlockedIds.Contains(schema.ApiName) ||
+                localAchievements.Any(la => la.AchievementExternalId == schema.ApiName && la.IsUnlocked)
+            );
+
+            if (steamSchema.Count == 0) return 0;
+
+            return (int)Math.Round((double)unlockedCount / steamSchema.Count * 100);
         }
 
         #endregion

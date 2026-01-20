@@ -16,7 +16,7 @@
     Guid currentUserId = Guid.Empty;
     if (!string.IsNullOrEmpty(currentUserIdStr))
     {
-        Guid.TryParse(currentUserIdStr, out currentUserId); //pobieranie identyfikatora aktualnego uzytkownika
+        Guid.TryParse(currentUserIdStr, out currentUserId);
     }
 
     bool isAdminOrMod = User.IsInRole("Admin") || User.IsInRole("Moderator");
@@ -25,11 +25,11 @@
 
     var userRatings = _context.GameRates
         .Where(r => r.IgdbGameId == gameId)
-        .ToDictionary(r => r.UserId, r => r.Value); //mapowanie ocen uzytkownikow dla potrzeb sortowania
+        .ToDictionary(r => r.UserId, r => r.Value);
 
     IEnumerable<praca_dyplomowa_zesp.Models.Modules.Games.GameReview> reviewsToDisplay = Model;
 
-    if (reviewsToDisplay != null) //logika sortowania recenzji wedlug wartosci ocen
+    if (reviewsToDisplay != null)
     {
         if (currentSort == "highest_rating")
         {
@@ -128,7 +128,7 @@
             {
                 var likes = review.Reactions?.Count(r => r.Type == ReactionType.Like) ?? 0;
                 var dislikes = review.Reactions?.Count(r => r.Type == ReactionType.Dislike) ?? 0;
-                var score = likes - dislikes; //obliczanie bilansu przydatnosci recenzji
+                var score = likes - dislikes;
                 bool userLiked = currentUserId != Guid.Empty && (review.Reactions?.Any(r => r.UserId == currentUserId && r.Type == ReactionType.Like) ?? false);
                 bool userDisliked = currentUserId != Guid.Empty && (review.Reactions?.Any(r => r.UserId == currentUserId && r.Type == ReactionType.Dislike) ?? false);
 
@@ -168,7 +168,7 @@
                                 </div>
                             </div>
 
-                            @if (isAuthor || isAdminOrMod) //menu opcji dla autora lub administracji
+                            @if (isAuthor || isAdminOrMod)
                             {
                                 <div class="dropdown">
                                     <button class="btn btn-link text-secondary p-0" type="button" data-bs-toggle="dropdown">
@@ -199,7 +199,6 @@
                         <div class="review-content full-text mb-3 mt-1" id="review-content-@review.Id">@review.Content?.Trim()</div>
 
                         <div class="d-flex align-items-center gap-3">
-                            @* system glosowania na przydatnosc recenzji *@
                             <form asp-controller="Reviews" asp-action="ToggleReaction" method="post">
                                 <input type="hidden" name="reviewId" value="@review.Id" />
                                 <input type="hidden" name="isUpvote" value="true" />
@@ -238,7 +237,6 @@
 @if (User.Identity.IsAuthenticated)
 {
     <div class="modal fade" id="addReviewModal" tabindex="-1" aria-hidden="true">
-        @* modal do publikacji nowej recenzji *@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content modal-neon" style="border-color: var(--neon-purple);">
                 <form asp-action="Create" method="post" id="createReviewForm" class="h-100 d-flex flex-column">
@@ -268,7 +266,7 @@
                                     @(myCurrentRating > 0 ? myCurrentRating.ToString("0.0", CultureInfo.InvariantCulture) : "-")
                                 </div>
                             </div>
-                            <input type="hidden" id="createRatingValue" value="@(myCurrentRating.ToString(CultureInfo.InvariantCulture))" />
+                            <input type="hidden" name="rating" id="createRatingValue" value="@(myCurrentRating.ToString(CultureInfo.InvariantCulture))" />
                         </div>
                         <div id="ratingError" class="text-center text-neon-danger small mb-2 d-none flex-shrink-0">Musisz ocenić grę (min. 0.5 gwiazdki).</div>
 
@@ -282,7 +280,7 @@
 
                     <div class="modal-footer border-0 justify-content-center pb-4 pt-0 gap-3">
                         <button type="button" class="btn btn-ghost-cancel px-4" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="button" class="btn btn-neon-primary px-4" onclick="submitCreateReview()">Opublikuj</button>
+                        <button type="button" class="btn btn-neon-primary px-4" id="btnSubmitCreate" onclick="submitCreateReview()">Opublikuj</button>
                     </div>
                 </form>
             </div>
@@ -290,7 +288,6 @@
     </div>
 
     <div class="modal fade" id="editReviewModal" tabindex="-1" aria-hidden="true">
-        @* modal do edycji istniejacej recenzji *@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content modal-neon" style="border-color: var(--neon-purple);">
                 <form asp-action="Edit" method="post" id="editReviewForm" class="h-100 d-flex flex-column">
@@ -333,7 +330,7 @@
 
                     <div class="modal-footer border-0 justify-content-center pb-4 pt-0 gap-3">
                         <button type="button" class="btn btn-ghost-cancel px-4" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="button" class="btn btn-neon-primary px-4" onclick="submitEditReview()">Zapisz zmiany</button>
+                        <button type="button" class="btn btn-neon-primary px-4" id="btnSubmitEdit" onclick="submitEditReview()">Zapisz zmiany</button>
                     </div>
                 </form>
             </div>
@@ -341,7 +338,6 @@
     </div>
 
     <div class="modal fade" id="deleteReviewModal" tabindex="-1" aria-hidden="true">
-        @* modal potwierdzenia usuniecia recenzji *@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content modal-neon modal-compact" style="border-color: var(--neon-red); box-shadow: 0 0 30px rgba(255, 51, 51, 0.2);">
                 <form asp-action="Delete" method="post">
@@ -368,16 +364,16 @@
     </div>
 
     <script>
-        function getToken() { //pobieranie tokena zabezpieczajacego csrf
+        function getToken() {
             var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
             return tokenInput ? tokenInput.value : '';
         }
-        function initStars(containerId, inputId, textId, initialValue) { //inicjalizacja interaktywnego systemu gwiazdek ocen
+        function initStars(containerId, inputId, textId, initialValue) {
             const container = document.getElementById(containerId);
             const input = document.getElementById(inputId);
             const text = document.getElementById(textId);
             const stars = container.querySelectorAll('i');
-            function updateStarVisuals(val) { //aktualizacja wygladu gwiazdek na podstawie wartosci
+            function updateStarVisuals(val) {
                 var numVal = parseFloat(val);
                 if (isNaN(numVal)) numVal = 0;
                 stars.forEach(s => {
@@ -408,7 +404,7 @@
             }
             updateStarVisuals(initialValue);
             stars.forEach(s => {
-                s.addEventListener('mousemove', function(e) { //podglad wartosci przy najechaniu myszka
+                s.addEventListener('mousemove', function(e) {
                     var rect = this.getBoundingClientRect();
                     var width = rect.width;
                     var x = e.clientX - rect.left;
@@ -416,7 +412,7 @@
                     var previewVal = (x < width / 2) ? (starIndex - 0.5) : starIndex;
                     updateStarVisuals(previewVal);
                 });
-                s.addEventListener('click', function(e) { //wybor ostatecznej wartosci oceny
+                s.addEventListener('click', function(e) {
                     var rect = this.getBoundingClientRect();
                     var width = rect.width;
                     var x = e.clientX - rect.left;
@@ -437,7 +433,7 @@
             var startVal = document.getElementById('createRatingValue').value;
             initStars('createRatingStars', 'createRatingValue', 'createRatingText', startVal);
         });
-        function openEditModal(id, contentId, currentRating) { //przygotowanie danych do edycji w modalu
+        function openEditModal(id, contentId, currentRating) {
             var content = document.getElementById(contentId).innerText.trim();
             document.getElementById('editReviewId').value = id;
             document.getElementById('editReviewContentInput').value = content;
@@ -451,35 +447,61 @@
             var modal = new bootstrap.Modal(document.getElementById('deleteReviewModal'));
             modal.show();
         }
-        function submitCreateReview() { //zsynchronizowanie zapisu oceny ogolnej z wyslaniem recenzji
+
+        async function submitCreateReview() {
             var ratingInput = document.getElementById('createRatingValue');
             var rating = parseFloat(ratingInput.value);
             var gameId = @gameId;
+
             if (isNaN(rating) || rating < 0.5) {
                 document.getElementById('ratingError').classList.remove('d-none');
                 return;
             }
-            fetch('/Games/RateGame', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getToken() },
-                body: JSON.stringify({ gameId: gameId, ratingValue: rating })
-            }).then(() => {
-                document.getElementById('createReviewForm').submit();
-            });
-        }
-        function submitEditReview() { //aktualizacja oceny przy zapisie edytowanej recenzji
-            var ratingInput = document.getElementById('editRatingValue');
-            var rating = parseFloat(ratingInput.value);
-            var gameId = @gameId;
-            if (!isNaN(rating) && rating >= 0.5) {
-                fetch('/Games/RateGame', {
+
+            const btn = document.getElementById('btnSubmitCreate');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Publikowanie...';
+            btn.disabled = true;
+
+            try {
+                await fetch('/Games/RateGame', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getToken() },
                     body: JSON.stringify({ gameId: gameId, ratingValue: rating })
-                }).then(() => {
-                    document.getElementById('editReviewForm').submit();
                 });
-            } else {
+
+                document.getElementById('createReviewForm').submit();
+            } catch (error) {
+                console.error("Błąd zapisu oceny", error);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                document.getElementById('createReviewForm').submit();
+            }
+        }
+
+        async function submitEditReview() {
+            var ratingInput = document.getElementById('editRatingValue');
+            var rating = parseFloat(ratingInput.value);
+            var gameId = @gameId;
+
+            const btn = document.getElementById('btnSubmitEdit');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Zapisywanie...';
+            btn.disabled = true;
+
+            try {
+                if (!isNaN(rating) && rating >= 0.5) {
+                    await fetch('/Games/RateGame', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getToken() },
+                        body: JSON.stringify({ gameId: gameId, ratingValue: rating })
+                    });
+                }
+                document.getElementById('editReviewForm').submit();
+            } catch (error) {
+                console.error("Błąd zapisu oceny", error);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
                 document.getElementById('editReviewForm').submit();
             }
         }

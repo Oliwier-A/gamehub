@@ -108,8 +108,8 @@
 
                 <div id="step-select-map" class="p-4">
                     <div class="row g-4">
-                        <div class="col-lg-8">
-                            <div class="mb-3">
+                        <div class="col-lg-8 d-flex flex-column" style="height: 600px;">
+                            <div class="flex-shrink-0 mb-3">
                                 <div class="admin-search-merged">
                                     <div class="admin-search-merged-inner">
                                         <div class="form-floating h-100 flex-grow-1">
@@ -123,7 +123,7 @@
                                 </div>
                             </div>
 
-                            <div class="row row-cols-1 row-cols-md-3 g-3" id="mapsListContainer" style="max-height: 500px; overflow-y: auto;">
+                            <div class="row row-cols-1 row-cols-md-3 g-3 flex-grow-1 custom-scrollbar" id="mapsListContainer" style="overflow-y: auto; align-content: flex-start;">
                             </div>
                         </div>
 
@@ -178,7 +178,7 @@
     <script src="https://unpkg.com/leaflet-simple-map-screenshoter"></script>
 
     <script>
-        function previewFile() { //generowanie podglądu wybranego zdjęcia okładkowego
+        function previewFile() {
             const previewContainer = document.getElementById('imagePreviewContainer');
             const previewImage = document.getElementById('imagePreview');
             const placeholder = document.getElementById('uploadPlaceholder');
@@ -200,7 +200,7 @@
             document.getElementById('uploadPlaceholder').classList.remove('d-none');
         }
 
-        function fixUrl(url) { //funkcja korygująca ścieżki URL plików
+        function fixUrl(url) {
             if (!url) return '';
             if (url.startsWith('http') || url.startsWith('data:')) return url;
             if (!url.startsWith('/')) return '/' + url;
@@ -208,7 +208,7 @@
         }
 
         document.addEventListener("DOMContentLoaded", function() {
-            tinymce.init({ //inicjalizacja edytora treści TinyMCE
+            tinymce.init({
                 selector: '#guide-editor',
                 plugins: 'anchor autolink charmap emoticons image link lists media searchreplace table visualblocks wordcount',
                 toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
@@ -218,9 +218,9 @@
                 content_css: "dark",
                 automatic_uploads: true,
                 convert_urls: false,
-                extended_valid_elements : 'img[class|src|border|alt|title|width|height|style|data-geojson|data-map-name|data-origin-src]', //zezwolenie na atrybuty mapy
+                extended_valid_elements : 'img[class|src|border|alt|title|width|height|style|data-geojson|data-map-name|data-origin-src]',
                 setup: function (editor) {
-                    editor.on('dblclick', function (e) { //otwieranie edycji mapy po dwukrotnym kliknięciu w obraz
+                    editor.on('dblclick', function (e) {
                         var target = e.target;
                         if (target.nodeName === 'IMG' && target.classList.contains('interactive-map-source')) {
                             editExistingMap(target);
@@ -244,15 +244,26 @@
             loadMaps();
         }
 
-        function loadMaps() { //pobieranie listy map dostępnych dla danej gry
+                function loadMaps() {
             var search = $('#mapSearch').val();
             $.get('/Maps/GetMapsForGame', { gameId: gameId, searchString: search }, function (data) {
                 var container = $('#mapsListContainer');
                 container.empty();
+
                 if (data.length === 0) {
-                    container.html('<div class="col-12 text-center text-muted py-4">Brak map w bazie. Dodaj pierwszą!</div>');
+                    container.removeClass('row-cols-1 row-cols-md-3');
+                    container.html(`
+                        <div class="col-12 h-100 d-flex flex-column justify-content-center align-items-center text-muted">
+                            <i class="fas fa-map-marked-alt fa-4x mb-3 opacity-25"></i>
+                            <h5 class="fw-bold opacity-50">BRAK MAP W BAZIE</h5>
+                            <p class="small opacity-50">Użyj formularza po prawej, aby dodać nową.</p>
+                        </div>
+                    `);
                     return;
                 }
+
+                container.addClass('row-cols-1 row-cols-md-3');
+
                 data.forEach(function (map) {
                     var safeUrl = fixUrl(map.imageUrl);
                     var html = `
@@ -273,7 +284,7 @@
         }
         function filterMaps() { loadMaps(); }
 
-        $('#uploadMapForm').on('submit', function (e) { //obsługa wysyłania nowej mapy na serwer
+        $('#uploadMapForm').on('submit', function (e) {
             e.preventDefault();
             var formData = new FormData();
             formData.append('gameId', gameId);
@@ -294,7 +305,7 @@
             setTimeout(function() { initEditorMap(null); }, 300);
         }
 
-        function editExistingMap(imgNode) { //wczytanie danych istniejącej mapy do ponownej edycji
+        function editExistingMap(imgNode) {
             editingNode = imgNode;
             var originSrc = imgNode.getAttribute('data-origin-src');
             var mapName = imgNode.getAttribute('data-map-name');
@@ -318,7 +329,7 @@
             $('#step-select-map').removeClass('d-none');
         }
 
-        function getPinIcon(color) { //tworzenie niestandardowej ikony punktu na mapie
+        function getPinIcon(color) {
             return L.divIcon({
                 className: 'custom-pin-icon',
                 html: `<i class="fas fa-map-marker-alt fa-3x" style="color: ${color}; text-shadow: 0px 0px 10px ${color};"></i>`,
@@ -328,10 +339,10 @@
             });
         }
 
-        function initEditorMap(initialGeoJson) { //inicjalizacja silnika map Leaflet w trybie edycji
+        function initEditorMap(initialGeoJson) {
             if (editorMap) { editorMap.remove(); editorMap = null; }
             editorMap = L.map('editorMap', {
-                crs: L.CRS.Simple, minZoom: -2, maxZoom: 4, zoomSnap: 0.25, preferCanvas: true //użycie układu płaskiego dla obrazów
+                crs: L.CRS.Simple, minZoom: -2, maxZoom: 4, zoomSnap: 0.25, preferCanvas: true
             });
 
             screenshoter = L.simpleMapScreenshoter({ hidden: true, mimeType: 'image/png' }).addTo(editorMap);
@@ -352,7 +363,7 @@
                 drawnItems = new L.FeatureGroup();
                 editorMap.addLayer(drawnItems);
 
-                if (initialGeoJson) { //ładowanie istniejących punktów i kształtów z formatu GeoJSON
+                if (initialGeoJson) {
                     try {
                         var geoData = JSON.parse(initialGeoJson);
                         L.geoJSON(geoData, {
@@ -384,7 +395,7 @@
                 });
                 editorMap.addControl(drawControl);
 
-                editorMap.on(L.Draw.Event.CREATED, function (e) { //obsługa dodania nowego elementu na mapę
+                editorMap.on(L.Draw.Event.CREATED, function (e) {
                     var layer = e.layer;
                     var type = e.layerType;
                     var color = document.getElementById('drawingColor').value;
@@ -408,12 +419,12 @@
             };
         }
 
-        function finishAndInsert() { //generowanie statycznego podglądu mapy i wstawienie do edytora tekstu
+        function finishAndInsert() {
             var geoJsonData = drawnItems.toGeoJSON();
             var jsonString = JSON.stringify(geoJsonData);
             var safeJson = jsonString.replace(/"/g, '&quot;');
 
-            screenshoter.takeScreen('blob').then(blob => { //wykonanie zrzutu ekranu mapy z naniesionymi zmianami
+            screenshoter.takeScreen('blob').then(blob => {
                 var reader = new FileReader();
                 reader.readAsDataURL(blob);
                 reader.onloadend = function() {

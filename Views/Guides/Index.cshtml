@@ -7,13 +7,13 @@
 
 @{
     ViewData["Title"] = $"{Model.GameName} - Poradniki";
-    bool canManageMaps = User.IsInRole("Admin") || User.IsInRole("Moderator"); //sprawdzanie uprawnien do zarządzania mapami
+    bool canManageMaps = User.IsInRole("Admin") || User.IsInRole("Moderator");
 
     var user = await UserManager.GetUserAsync(User);
     var currentUserId = user?.Id ?? Guid.Empty;
 
     string currentSort = ViewData["CurrentSort"] as string;
-    string currentSortText = currentSort switch //mapowanie klucza sortowania na czytelny tekst
+    string currentSortText = currentSort switch
     {
         "rating_desc" => "Najlepiej oceniane",
         "mine" => "Moje poradniki",
@@ -23,7 +23,6 @@
 
 <div class="container mt-1 main-container fade-in-up">
 
-    @* --- NAGŁÓWEK --- *@
     <div class="game-header-guides text-center mb-5">
         <h1 class="text-neon-title" style="font-size: 3rem; margin-bottom: 0.5rem;">@Model.GameName</h1>
         <p class="browse-subtitle" style="font-size: 1.2rem;">Baza wiedzy i poradników</p>
@@ -42,7 +41,7 @@
                     <i class="fas fa-plus fs-5"></i> <span>NAPISZ PORADNIK</span>
                 </a>
 
-                @if (Model.IsInLibrary) //status obecnosci gry w bibliotece uzytkownika
+                @if (Model.IsInLibrary)
                 {
                     <button class="btn btn-neon-primary disabled btn-with-text">
                         <i class="fas fa-check fs-5"></i> <span>W BIBLIOTECE</span>
@@ -68,7 +67,6 @@
         </div>
     </div>
 
-    @* --- FILTRY --- *@
     <div class="glass-panel mb-4 filter-container">
         <form id="filterForm" asp-action="Index" method="get" class="row g-3 align-items-center">
             <input type="hidden" name="gameId" value="@Model.IgdbGameId" />
@@ -91,7 +89,6 @@
             </div>
 
             <div class="col-md-4">
-                @* dropdown do wyboru trybu sortowania *@
                 <div class="dropdown w-100">
                     <div class="dropdown-toggle no-arrow" data-bs-toggle="dropdown" style="cursor:pointer; text-decoration: none;">
                         <div class="admin-search-merged mb-0 w-100">
@@ -136,18 +133,16 @@
         </form>
     </div>
 
-    @* --- GŁÓWNY UKŁAD: PORADNIKI I TIPY --- *@
     <div class="row guides-row-equal">
 
         <div class="col-lg-9 d-flex flex-column">
-            @* kolumna z listą kart poradników *@
             <div class="guides-main-panel">
                 @if (Model.Guides.Any())
                 {
                     <div class="row row-cols-1 row-cols-md-2 g-4">
                         @foreach (var guide in Model.Guides)
                         {
-                            var avgRating = guide.Rates != null && guide.Rates.Any() ? guide.Rates.Average(r => r.Value) : 0; //srednia ocena poradnika
+                            var avgRating = guide.Rates != null && guide.Rates.Any() ? guide.Rates.Average(r => r.Value) : 0;
                             bool isDeleted = guide.IsDeleted;
                             bool isDraft = guide.IsDraft;
                             bool isRejected = guide.IsRejected;
@@ -163,7 +158,7 @@
                             else if (isRejected) { cardClass += " guide-card-rejected"; badgeLabel = "Do Poprawy"; badgeClass = "badge-rejected"; }
                             else if (isPending) { cardClass += " guide-card-pending"; badgeLabel = "Weryfikacja"; badgeClass = "badge-pending"; }
 
-                            bool isDirectDelete = isDeleted || isDraft || isRejected || isPending; //logika wyboru trybu usuwania
+                            bool isDirectDelete = isDeleted || isDraft || isRejected || isPending;
 
                             <div class="col">
                                 <div class="@cardClass">
@@ -263,7 +258,6 @@
         </div>
 
         <div class="col-lg-3 d-flex flex-column">
-            @* kolumna z krotkimi wskazowkami (tipami) *@
             <div class="sticky-top-tips">
                 <div class="tips-panel">
                     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom border-secondary">
@@ -275,7 +269,7 @@
 
                     @if (Model.Tips != null && Model.Tips.Any())
                     {
-                        var sortedTips = Model.Tips.OrderByDescending(t => (t.Reactions?.Count(r => r.Type == ReactionType.Like) ?? 0) - (t.Reactions?.Count(r => r.Type == ReactionType.Dislike) ?? 0)).ThenByDescending(t => t.CreatedAt).ToList(); //sortowanie tipow po popularnosci
+                        var sortedTips = Model.Tips.OrderByDescending(t => (t.Reactions?.Count(r => r.Type == ReactionType.Like) ?? 0) - (t.Reactions?.Count(r => r.Type == ReactionType.Dislike) ?? 0)).ThenByDescending(t => t.CreatedAt).ToList();
                         int tipCounter = 0;
 
                         <div class="tips-container-content gap-2">
@@ -309,7 +303,6 @@
 
                                         <div class="d-flex gap-2 align-items-center">
 
-                                            @* Przycisk Like *@
                                             <button type="button"
                                                     onclick="toggleTipReaction(@tip.Id, true)"
                                                     class="btn-vote vote-up @(userLiked ? "active" : "")"
@@ -318,13 +311,11 @@
                                                 <i class="@(userLiked ? "fas" : "far") fa-thumbs-up" id="icon-up-@tip.Id"></i>
                                             </button>
 
-                                            @* Wynik *@
                                             <span class="small fw-bold @(score > 0 ? "text-success" : (score < 0 ? "text-danger" : "text-muted"))"
                                                   id="score-val-@tip.Id">
                                                 @score
                                             </span>
 
-                                            @* Przycisk Dislike *@
                                             <button type="button"
                                                     onclick="toggleTipReaction(@tip.Id, false)"
                                                     class="btn-vote vote-down @(userDisliked ? "active" : "")"
@@ -363,10 +354,7 @@
     </div>
 </div>
 
-@* --- MODALE --- *@
-
 <div class="modal fade" id="addTipModal" tabindex="-1" aria-hidden="true">
-    @* modal dodawania wskazowki *@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-neon modal-compact" style="border-color: var(--neon-purple); box-shadow: 0 0 20px color-mix(in srgb, var(--neon-purple) 20%, transparent);">
             <form asp-action="AddTip" method="post" class="d-flex flex-column">
@@ -392,7 +380,6 @@
 </div>
 
 <div class="modal fade" id="editTipModal" tabindex="-1">
-    @* modal edycji wskazowki *@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-neon modal-compact" style="border-color: var(--neon-purple); box-shadow: 0 0 20px color-mix(in srgb, var(--neon-purple) 20%, transparent);">
             <form asp-action="EditTip" method="post" class="d-flex flex-column">
@@ -418,7 +405,6 @@
 </div>
 
 <div class="modal fade" id="deleteTipModal" tabindex="-1">
-    @* modal usuwania wskazowki *@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-neon modal-compact" style="border-color: var(--neon-red); box-shadow: 0 0 30px rgba(255, 51, 51, 0.2);">
             <form asp-action="DeleteTip" method="post">
@@ -442,7 +428,6 @@
 </div>
 
 <div class="modal fade" id="deleteGuideModal" tabindex="-1" aria-hidden="true">
-    @* modal miekkiego usuwania poradnika *@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-neon modal-compact" style="border-color: var(--neon-red); box-shadow: 0 0 20px color-mix(in srgb, var(--neon-red) 20%, transparent);">
             <form asp-action="Delete" method="post">
@@ -465,7 +450,6 @@
 </div>
 
 <div class="modal fade" id="deletePermanentlyModal" tabindex="-1" aria-hidden="true">
-    @* modal trwalego usuwania poradnika *@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-neon modal-compact modal-danger-neon" style="border-color: var(--neon-red);">
             <form asp-action="DeletePermanently" method="post">
@@ -487,7 +471,7 @@
     </div>
 </div>
 
-@if (canManageMaps) @* modal zarządzania mapami gry *@
+@if (canManageMaps)
 {
     <div class="modal fade" id="mapManagerModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -515,6 +499,32 @@
 @section Scripts {
     <script>
         var gameId = @Model.IgdbGameId;
+
+        function showNotification(message, type) {
+            var isSuccess = type === 'success';
+            var alertClass = isSuccess ? 'alert-neon-success' : 'alert-neon-danger';
+            var iconClass = isSuccess ? 'fa-check-circle' : 'fa-exclamation-triangle';
+            var title = isSuccess ? 'SUKCES' : 'BŁĄD';
+
+            var notificationHtml = `
+                <div class="alert alert-neon ${alertClass} alert-dismissible fade show mb-4" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="fas ${iconClass} me-3 icon-glow"></i>
+                        <div>
+                            <strong>${title}</strong><br />
+                            ${message}
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>`;
+
+            var container = document.querySelector('.main-container');
+            if (container) {
+                $(container).prepend(notificationHtml);
+
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
 
         function openDeleteGuideModal(id, title) {
             document.getElementById('deleteGuideId').value = id;
@@ -544,7 +554,7 @@
             loadManagerMaps();
             modal.show();
         }
-        function loadManagerMaps() { //pobieranie listy map za pomoca AJAX
+        function loadManagerMaps() {
             $.get('/Maps/GetMapsForManager', { gameId: gameId }, function (data) {
                 var container = $('#mapManagerList');
                 container.empty();
@@ -558,16 +568,16 @@
                 });
             });
         }
-        function renameMap(id) { //zmiana nazwy mapy przez administratora
+        function renameMap(id) {
             var newName = $('#map-name-' + id).val();
             $.post('/Maps/RenameMap', { id: id, newName: newName }, function (res) { if (!res.success) alert("Błąd."); });
         }
-        function toggleMapStatus(id) { //przelaczanie statusu usuniecia mapy
+        function toggleMapStatus(id) {
             if(!confirm("Zmienić status mapy?")) return;
             $.post('/Maps/ToggleMapStatus', { id: id }, function (res) { if (res.success) loadManagerMaps(); else alert("Błąd."); });
         }
 
-        function submitSort(val) { //automatyczne zatwierdzenie filtrów po zmianie sortowania
+        function submitSort(val) {
             document.getElementById('hiddenSortOrder').value = val;
             document.getElementById('filterForm').submit();
         }
@@ -583,11 +593,9 @@
             },
             function(response) {
                 if (response.success) {
-                    // 1. Aktualizacja Licznika
                     var scoreEl = $('#score-val-' + tipId);
                     scoreEl.text(response.newScore);
 
-                    // Aktualizacja koloru licznika
                     scoreEl.removeClass('text-success text-danger text-muted');
                     if (response.newScore > 0) scoreEl.addClass('text-success');
                     else if (response.newScore < 0) scoreEl.addClass('text-danger');
@@ -598,13 +606,11 @@
                     var btnDown = $('#btn-down-' + tipId);
                     var iconDown = $('#icon-down-' + tipId);
 
-                    // Reset
                     btnUp.removeClass('active');
                     iconUp.removeClass('fas').addClass('far');
                     btnDown.removeClass('active');
                     iconDown.removeClass('fas').addClass('far');
 
-                    // Ustawienie nowych stanów
                     if (response.isLiked) {
                         btnUp.addClass('active');
                         iconUp.removeClass('far').addClass('fas');
@@ -616,7 +622,7 @@
                 } else {
                 }
             }).fail(function() {
-                 alert("Musisz być zalogowany, aby oceniać!");
+                 showNotification("Musisz być zalogowany, aby oceniać wskazówki!", "error");
             });
         }
     </script>

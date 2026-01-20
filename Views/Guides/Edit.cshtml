@@ -2,7 +2,7 @@
 
 @{
     ViewData["Title"] = "Edytuj poradnik";
-    bool isDraft = Model.IsDraft; //sprawdzenie czy edytowany poradnik jest szkicem
+    bool isDraft = Model.IsDraft;
 }
 
 <script src="https://unpkg.com/tinymce@6.8.2/tinymce.min.js"></script>
@@ -31,7 +31,6 @@
             <div class="glass-panel p-4" style="border-top: 3px solid var(--neon-purple);">
 
                 <form asp-action="Edit" enctype="multipart/form-data">
-                    @* obsługa wysyłania plików binarnych *@
                     <div asp-validation-summary="ModelOnly" class="alert alert-neon alert-neon-danger mb-4"></div>
                     <input type="hidden" asp-for="Id" />
                     <input type="hidden" asp-for="IgdbGameId" />
@@ -68,7 +67,7 @@
                             <div class="mb-4">
                                 <label class="text-white-50 small text-uppercase fw-bold mb-2">Zmiana okładki</label>
 
-                                @if (Model.CoverImage != null) //wyświetlanie aktualnie ustawionej okladki
+                                @if (Model.CoverImage != null)
                                 {
                                     <div class="mb-3 position-relative rounded overflow-hidden border border-secondary" style="max-height: 100px;">
                                         <img src="data:@Model.CoverImageContentType;base64,@Convert.ToBase64String(Model.CoverImage)" class="w-100 h-100" style="object-fit: cover; opacity: 0.6;" />
@@ -123,24 +122,24 @@
             <div class="modal-body p-0">
 
                 <div id="step-select-map" class="p-4">
-                    <div class="mb-4">
-                        @* wyszukiwarka przeniesiona na gore modala *@
-                        <div class="admin-search-merged">
-                            <div class="admin-search-merged-inner">
-                                <div class="form-floating h-100 flex-grow-1">
-                                    <input type="text" class="form-control text-white" id="mapSearch" placeholder="Szukaj mapy..." onkeyup="filterMaps()">
-                                    <label for="mapSearch">Szukaj mapy...</label>
-                                </div>
-                                <button class="btn-search-integrated">
-                                    <i class="fas fa-search"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="row g-4">
-                        <div class="col-lg-8">
-                            <div class="row row-cols-1 row-cols-md-3 g-3" id="mapsListContainer" style="max-height: 500px; overflow-y: auto;">
+                        <div class="col-lg-8 d-flex flex-column" style="height: 600px;">
+
+                            <div class="flex-shrink-0 mb-3">
+                                <div class="admin-search-merged">
+                                    <div class="admin-search-merged-inner">
+                                        <div class="form-floating h-100 flex-grow-1">
+                                            <input type="text" class="form-control text-white" id="mapSearch" placeholder="Szukaj mapy..." onkeyup="filterMaps()">
+                                            <label for="mapSearch" class="text-muted">Szukaj mapy...</label>
+                                        </div>
+                                        <button class="btn-search-integrated">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row row-cols-1 row-cols-md-3 g-3 flex-grow-1" id="mapsListContainer" style="overflow-y: auto; align-content: flex-start;">
                             </div>
                         </div>
 
@@ -182,6 +181,7 @@
                         </button>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -194,7 +194,7 @@
     <script src="https://unpkg.com/leaflet-simple-map-screenshoter"></script>
 
     <script>
-        function previewFile() { //obsługa podglądu nowo wybranego zdjęcia okładkowego
+        function previewFile() {
             const previewContainer = document.getElementById('newImagePreviewContainer');
             const previewImage = document.getElementById('imagePreview');
             const fileInput = document.getElementById('coverImageInput');
@@ -210,7 +210,7 @@
             document.getElementById('newImagePreviewContainer').classList.add('d-none');
         }
 
-        function fixUrl(url) { //funkcja korygująca ścieżki URL dla zasobów statycznych
+        function fixUrl(url) {
             if (!url) return '';
             if (url.startsWith('http') || url.startsWith('data:')) return url;
             if (!url.startsWith('/')) return '/' + url;
@@ -218,7 +218,7 @@
         }
 
         document.addEventListener("DOMContentLoaded", function() {
-            tinymce.init({ //inicjalizacja edytora TinyMCE z konfiguracją dark mode
+            tinymce.init({
                 selector: '#guide-editor',
                 plugins: 'anchor autolink charmap emoticons image link lists media searchreplace table visualblocks wordcount',
                 toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
@@ -229,7 +229,7 @@
                 automatic_uploads: true,
                 file_picker_types: 'image',
                 setup: function (editor) {
-                    editor.on('dblclick', function (e) { //otwieranie edytora map po dwukrotnym kliknięciu w mapę w treści
+                    editor.on('dblclick', function (e) {
                         var target = e.target;
                         if (target.nodeName === 'IMG' && target.classList.contains('interactive-map-source')) {
                             editExistingMap(target);
@@ -253,16 +253,26 @@
             loadMaps();
         }
 
-        function loadMaps() { //ładowanie dostępnych map za pomocą AJAX
+        function loadMaps() {
             var search = $('#mapSearch').val();
             $.get('/Maps/GetMapsForGame', { gameId: gameId, searchString: search }, function (data) {
                 var container = $('#mapsListContainer');
                 container.empty();
+
                 if (data.length === 0) {
-                    // Wyśrodkowany komunikat o braku wyników
-                    container.html('<div class="col-12 d-flex justify-content-center align-items-center" style="min-height: 200px;"><div class="text-center text-muted py-4">Brak map w bazie. Dodaj pierwszą!</div></div>');
+                    container.removeClass('row-cols-1 row-cols-md-3');
+                    container.html(`
+                        <div class="col-12 h-100 d-flex flex-column justify-content-center align-items-center text-muted">
+                            <i class="fas fa-map-marked-alt fa-4x mb-3 opacity-25"></i>
+                            <h5 class="fw-bold opacity-50">BRAK MAP W BAZIE</h5>
+                            <p class="small opacity-50">Użyj formularza po prawej, aby dodać nową.</p>
+                        </div>
+                    `);
                     return;
                 }
+
+                container.addClass('row-cols-1 row-cols-md-3');
+
                 data.forEach(function (map) {
                     var safeUrl = fixUrl(map.imageUrl);
                     var html = `
@@ -283,7 +293,7 @@
         }
         function filterMaps() { loadMaps(); }
 
-        $('#uploadMapForm').on('submit', function (e) { //obsługa wgrywania nowej mapy do bazy
+        $('#uploadMapForm').on('submit', function (e) {
             e.preventDefault();
             var formData = new FormData();
             formData.append('gameId', gameId);
@@ -296,7 +306,7 @@
             });
         });
 
-        function startEditingMap(url, name) { //uruchomienie trybu rysowania na mapie
+        function startEditingMap(url, name) {
             currentMapData = { url: url, name: name };
             $('#step-select-map').addClass('d-none');
             $('#step-draw-map').removeClass('d-none');
@@ -304,7 +314,7 @@
             setTimeout(function() { initEditorMap(null); }, 300);
         }
 
-        function editExistingMap(imgNode) { //wczytanie istniejącej mapy z treści do edytora
+        function editExistingMap(imgNode) {
             editingNode = imgNode;
             var originSrc = imgNode.getAttribute('data-origin-src');
             var mapName = imgNode.getAttribute('data-map-name');
@@ -328,7 +338,7 @@
             $('#step-select-map').removeClass('d-none');
         }
 
-        function getPinIcon(color) { //generowanie ikony pinezki o wybranym kolorze
+        function getPinIcon(color) {
             return L.divIcon({
                 className: 'custom-pin-icon',
                 html: `<i class="fas fa-map-marker-alt fa-3x" style="color: ${color}; text-shadow: 0px 0px 10px ${color};"></i>`,
@@ -338,7 +348,7 @@
             });
         }
 
-        function initEditorMap(initialGeoJson) { //inicjalizacja silnika Leaflet dla edytora map
+        function initEditorMap(initialGeoJson) {
             if (editorMap) { editorMap.remove(); editorMap = null; }
             editorMap = L.map('editorMap', {
                 crs: L.CRS.Simple, minZoom: -2, maxZoom: 4, zoomSnap: 0.25, preferCanvas: true
@@ -362,7 +372,7 @@
                 drawnItems = new L.FeatureGroup();
                 editorMap.addLayer(drawnItems);
 
-                if (initialGeoJson) { //wczytywanie narysowanych wcześniej elementów z formatu GeoJSON
+                if (initialGeoJson) {
                     try {
                         var geoData = JSON.parse(initialGeoJson);
                         L.geoJSON(geoData, {
@@ -383,7 +393,7 @@
                     } catch (e) { console.error("Błąd GeoJSON: ", e); }
                 }
 
-                var drawControl = new L.Control.Draw({ //konfiguracja paska narzędzi rysowania
+                var drawControl = new L.Control.Draw({
                     draw: {
                         polyline: { shapeOptions: { weight: 4 } },
                         polygon: { shapeOptions: { weight: 2 } },
@@ -394,7 +404,7 @@
                 });
                 editorMap.addControl(drawControl);
 
-                editorMap.on(L.Draw.Event.CREATED, function (e) { //przypisywanie koloru i notatek do nowo narysowanych obiektów
+                editorMap.on(L.Draw.Event.CREATED, function (e) {
                     var layer = e.layer;
                     var type = e.layerType;
                     var color = document.getElementById('drawingColor').value;
@@ -418,7 +428,7 @@
             };
         }
 
-        function finishAndInsert() { //eksport mapy do obrazu base64 i wstawienie do edytora tekstu
+        function finishAndInsert() {
             var geoJsonData = drawnItems.toGeoJSON();
             var jsonString = JSON.stringify(geoJsonData);
             var safeJson = jsonString.replace(/"/g, '&quot;');

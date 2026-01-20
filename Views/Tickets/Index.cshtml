@@ -33,7 +33,6 @@
             <div class="col-12">
                 @foreach (var item in Model)
                 {
-                    //dynamiczne mapowanie stylów i ikon na podstawie stanu zgłoszenia
                     string statusColorVar = "var(--text-muted)";
                     string statusIcon = "fa-circle";
                     string statusLabel = "Nieznany";
@@ -41,7 +40,7 @@
                     switch (item.Status)
                     {
                         case praca_dyplomowa_zesp.Models.TicketStatus.Oczekujące:
-                            statusColorVar = "var(--neon-green)";
+                            statusColorVar = "var(--neon-red)";
                             statusIcon = "fa-clock";
                             statusLabel = "OCZEKUJĄCE";
                             break;
@@ -51,7 +50,7 @@
                             statusLabel = "W TRAKCIE";
                             break;
                         case praca_dyplomowa_zesp.Models.TicketStatus.Zamknięte:
-                            statusColorVar = "var(--border-tech)";
+                            statusColorVar = "var(--neon-green)";
                             statusIcon = "fa-check-circle";
                             statusLabel = "ZAMKNIĘTE";
                             break;
@@ -75,7 +74,6 @@
                                         @statusLabel
                                     </span>
 
-                                    @* wizualne wyróżnienie zgłoszeń z nową odpowiedzią od administracji *@
                                     @if (item.HasUnreadResponse)
                                     {
                                         <span class="badge border bg-transparent ms-2"
@@ -104,7 +102,6 @@
 </div>
 
 <script>
-    //inicjalizacja systemowych tooltipów Bootstrapa dla wszystkich elementów z atrybutem title
     document.addEventListener("DOMContentLoaded", function() {
         var popoverTriggerList = [].slice.call(document.querySelectorAll('[title]'))
         var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
