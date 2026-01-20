@@ -279,6 +279,8 @@
                         int tipCounter = 0;
 
                         <div class="tips-container-content gap-2">
+                            @Html.AntiForgeryToken()
+
                             @foreach (var tip in sortedTips)
                             {
                                 int score = (tip.Reactions?.Count(r => r.Type == ReactionType.Like) ?? 0) - (tip.Reactions?.Count(r => r.Type == ReactionType.Dislike) ?? 0);
@@ -304,16 +306,33 @@
                                             }
                                             <span class="small fw-bold" style="font-size: 0.8rem; color: @tipNameColor; text-shadow: 0 0 5px @tipNameColor;">@tip.User?.UserName</span>
                                         </div>
+
                                         <div class="d-flex gap-2 align-items-center">
-                                            <form asp-action="ToggleTipReaction" method="post" class="d-inline">
-                                                <input type="hidden" name="tipId" value="@tip.Id" /><input type="hidden" name="isUpvote" value="true" />
-                                                <button type="submit" class="btn-vote vote-up @(userLiked ? "active" : "")" style="width: 28px; height: 28px; font-size: 0.8rem;"><i class="@(userLiked ? "fas" : "far") fa-thumbs-up"></i></button>
-                                            </form>
-                                            <span class="small fw-bold @(score > 0 ? "text-success" : (score < 0 ? "text-danger" : "text-muted"))">@score</span>
-                                            <form asp-action="ToggleTipReaction" method="post" class="d-inline">
-                                                <input type="hidden" name="tipId" value="@tip.Id" /><input type="hidden" name="isUpvote" value="false" />
-                                                <button type="submit" class="btn-vote vote-down @(userDisliked ? "active" : "")" style="width: 28px; height: 28px; font-size: 0.8rem;"><i class="@(userDisliked ? "fas" : "far") fa-thumbs-down"></i></button>
-                                            </form>
+
+                                            @* Przycisk Like *@
+                                            <button type="button"
+                                                    onclick="toggleTipReaction(@tip.Id, true)"
+                                                    class="btn-vote vote-up @(userLiked ? "active" : "")"
+                                                    id="btn-up-@tip.Id"
+                                                    style="width: 28px; height: 28px; font-size: 0.8rem;">
+                                                <i class="@(userLiked ? "fas" : "far") fa-thumbs-up" id="icon-up-@tip.Id"></i>
+                                            </button>
+
+                                            @* Wynik *@
+                                            <span class="small fw-bold @(score > 0 ? "text-success" : (score < 0 ? "text-danger" : "text-muted"))"
+                                                  id="score-val-@tip.Id">
+                                                @score
+                                            </span>
+
+                                            @* Przycisk Dislike *@
+                                            <button type="button"
+                                                    onclick="toggleTipReaction(@tip.Id, false)"
+                                                    class="btn-vote vote-down @(userDisliked ? "active" : "")"
+                                                    id="btn-down-@tip.Id"
+                                                    style="width: 28px; height: 28px; font-size: 0.8rem;">
+                                                <i class="@(userDisliked ? "fas" : "far") fa-thumbs-down" id="icon-down-@tip.Id"></i>
+                                            </button>
+
                                             @if (canEditTip)
                                             {
                                                 <div class="dropdown ms-1">
@@ -551,6 +570,54 @@
         function submitSort(val) { //automatyczne zatwierdzenie filtrów po zmianie sortowania
             document.getElementById('hiddenSortOrder').value = val;
             document.getElementById('filterForm').submit();
+        }
+
+            function toggleTipReaction(tipId, isUpvote) {
+            var token = $('input[name="__RequestVerificationToken"]').val();
+
+            $.post('/Guides/ToggleTipReaction',
+            {
+                tipId: tipId,
+                isUpvote: isUpvote,
+                __RequestVerificationToken: token
+            },
+            function(response) {
+                if (response.success) {
+                    // 1. Aktualizacja Licznika
+                    var scoreEl = $('#score-val-' + tipId);
+                    scoreEl.text(response.newScore);
+
+                    // Aktualizacja koloru licznika
+                    scoreEl.removeClass('text-success text-danger text-muted');
+                    if (response.newScore > 0) scoreEl.addClass('text-success');
+                    else if (response.newScore < 0) scoreEl.addClass('text-danger');
+                    else scoreEl.addClass('text-muted');
+
+                    var btnUp = $('#btn-up-' + tipId);
+                    var iconUp = $('#icon-up-' + tipId);
+                    var btnDown = $('#btn-down-' + tipId);
+                    var iconDown = $('#icon-down-' + tipId);
+
+                    // Reset
+                    btnUp.removeClass('active');
+                    iconUp.removeClass('fas').addClass('far');
+                    btnDown.removeClass('active');
+                    iconDown.removeClass('fas').addClass('far');
+
+                    // Ustawienie nowych stanów
+                    if (response.isLiked) {
+                        btnUp.addClass('active');
+                        iconUp.removeClass('far').addClass('fas');
+                    }
+                    if (response.isDisliked) {
+                        btnDown.addClass('active');
+                        iconDown.removeClass('far').addClass('fas');
+                    }
+                } else {
+                }
+            }).fail(function() {
+                 alert("Musisz być zalogowany, aby oceniać!");
+            });
         }
     </script>
 }

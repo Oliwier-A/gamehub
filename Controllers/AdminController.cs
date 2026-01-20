@@ -241,16 +241,20 @@ namespace praca_dyplomowa_zesp.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> DeletePermanently(int id)
+        public async Task<IActionResult> DeleteGuidePermanently(int id)
         {
             var guide = await _context.Guides.FindAsync(id);
             if (guide != null)
             {
-                //calkowite usuniecie rekordu z bazy danych
+                long gameId = guide.IgdbGameId;
+
                 _context.Guides.Remove(guide);
                 await _context.SaveChangesAsync();
                 TempData["Success"] = "Poradnik został usunięty permanentnie.";
+
+                return RedirectToAction("Index", "Guides", new { gameId = gameId });
             }
+
             return RedirectToAction(nameof(Index));
         }
 

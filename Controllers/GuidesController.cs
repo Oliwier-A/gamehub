@@ -451,7 +451,6 @@ namespace praca_dyplomowa_zesp.Controllers
 
             if (reaction != null)
             {
-                //usuniecie reakcji jesli uzytkownik kliknal w ten sam typ ponownie
                 if (reaction.Type == targetType) _context.Reactions.Remove(reaction);
                 else { reaction.Type = targetType; _context.Update(reaction); }
             }
@@ -461,7 +460,14 @@ namespace praca_dyplomowa_zesp.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index), new { gameId = tip.IgdbGameId });
+
+            int newScore = await _context.Reactions.CountAsync(r => r.TipId == tipId && r.Type == ReactionType.Like)
+                         - await _context.Reactions.CountAsync(r => r.TipId == tipId && r.Type == ReactionType.Dislike);
+
+            bool isLiked = await _context.Reactions.AnyAsync(r => r.TipId == tipId && r.UserId == user.Id && r.Type == ReactionType.Like);
+            bool isDisliked = await _context.Reactions.AnyAsync(r => r.TipId == tipId && r.UserId == user.Id && r.Type == ReactionType.Dislike);
+
+            return Json(new { success = true, newScore = newScore, isLiked = isLiked, isDisliked = isDisliked });
         }
 
         #endregion

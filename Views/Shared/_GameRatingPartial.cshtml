@@ -51,7 +51,8 @@
 
             <div class="d-flex justify-content-center align-items-center gap-2 w-100">
 
-                <div class="d-flex align-items-baseline gap-2"> @* sekcja wyświetlania średniej lokalnej w skali 1-100 *@
+                <div class="d-flex align-items-baseline gap-2">
+                    @* sekcja wyświetlania średniej lokalnej w skali 1-100 *@
                     <div class="cyber-score-lg" style="font-size: 2.5rem; color: #ffffff; text-shadow: 0 0 10px var(--neon-purple), 0 0 20px var(--neon-purple); line-height: 1;" id="local-avg-display">
                         @((Model.LocalAverageRating * 10) > 0 ? (Model.LocalAverageRating * 10).ToString("0") : "-")
                     </div>
@@ -107,7 +108,7 @@
 
 @if (User.Identity.IsAuthenticated)
 {
-    <div class="modal fade" id="deleteRatingModal" tabindex="-1" aria-hidden="true"> @* modal potwierdzający usunięcie oceny *@
+    <div class="modal fade" id="deleteRatingModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content modal-neon modal-compact" style="border-color: var(--neon-red); box-shadow: 0 0 30px rgba(255, 51, 51, 0.2);">
                 <div class="modal-header border-secondary justify-content-center pt-3 pb-0 border-0">
@@ -127,8 +128,10 @@
     </div>
 
     <script>
-        window.openDeleteRatingModal = function() {
-            var modal = new bootstrap.Modal(document.getElementById('deleteRatingModal'));
+                window.openDeleteRatingModal = function() {
+            var modalElement = document.getElementById('deleteRatingModal');
+            document.body.appendChild(modalElement);
+            var modal = new bootstrap.Modal(modalElement);
             modal.show();
         };
 

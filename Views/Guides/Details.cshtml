@@ -6,7 +6,7 @@
 @{
     ViewData["Title"] = Model.Guide.Title;
 
-    Guid currentUserId = Guid.Empty; //inicjalizacja id zalogowanego uzytkownika
+    Guid currentUserId = Guid.Empty;
     if (User.Identity.IsAuthenticated)
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -16,7 +16,7 @@
         }
     }
 
-    bool isAuthor = User.Identity.IsAuthenticated && Model.Guide.User?.UserName == User.Identity.Name; //sprawdzenie czy uzytkownik jest autorem
+    bool isAuthor = User.Identity.IsAuthenticated && Model.Guide.User?.UserName == User.Identity.Name;
     bool isAdminOrMod = User.IsInRole("Admin") || User.IsInRole("Moderator");
 
     // --- LOGIKA STATUSÓW ---
@@ -30,36 +30,36 @@
     string statusLabel = "OPUBLIKOWANY";
     string statusBtnColor = "var(--neon-purple)";
 
-    if (isDeleted) //przypisywanie stylow dla statusu usunietego
+    if (isDeleted)
     {
         statusBorderClass = "status-border-deleted";
         statusLabel = "USUNIĘTY / KOSZ";
         statusBtnColor = "var(--neon-red)";
     }
-    else if (isDraft) //przypisywanie stylow dla szkicu
+    else if (isDraft)
     {
         statusBorderClass = "status-border-draft";
         statusLabel = "SZKIC ROBOCZY";
         statusBtnColor = "var(--neon-grey)";
     }
-    else if (isRejected) //przypisywanie stylow dla odrzuconego poradnika
+    else if (isRejected)
     {
         statusBorderClass = "status-border-rejected";
         statusLabel = "DO POPRAWY";
         statusBtnColor = "var(--neon-orange)";
     }
-    else if (isPending) //przypisywanie stylow dla oczekujacego poradnika
+    else if (isPending)
     {
         statusBorderClass = "status-border-pending";
         statusLabel = "OCZEKUJE NA AKCEPTACJĘ";
         statusBtnColor = "var(--neon-yellow)";
     }
 
-    string bgImageUrl = Model.Guide.CoverImage != null //konwersja zdjecia okladkowego na format base64
+    string bgImageUrl = Model.Guide.CoverImage != null
         ? $"data:{Model.Guide.CoverImageContentType};base64,{Convert.ToBase64String(Model.Guide.CoverImage)}"
         : "";
 
-    string GetRoleColor(string role) //funkcja pomocnicza do zwracania kolorow na podstawie roli
+    string GetRoleColor(string role)
     {
         var r = role?.ToLower() ?? "user";
         if (r == "admin") return "var(--neon-red)";
@@ -70,20 +70,7 @@
 
 <div class="container mt-4 main-container fade-in-up">
 
-    @if (TempData["StatusMessage"] != null)
-    {
-        <div class="alert alert-neon alert-neon-success alert-dismissible fade show mb-4" role="alert">
-            <i class="fas fa-check-circle me-2"></i> @TempData["StatusMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-neon alert-neon-danger alert-dismissible fade show mb-4" role="alert">
-            <i class="fas fa-exclamation-triangle me-2"></i> @TempData["Error"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
+    @* USUNIĘTO LOKALNE POWIADOMIENIA (TempData) - są obsługiwane globalnie w _Layout.cshtml *@
 
     <div class="d-flex justify-content-between align-items-center position-relative mb-4">
         <div>
@@ -92,7 +79,7 @@
             </a>
         </div>
 
-        @if (isAuthor || isAdminOrMod) //wyswietlanie plakietki statusu dla uprawnionych
+        @if (isAuthor || isAdminOrMod)
         {
             <div class="position-absolute start-50 translate-middle-x">
                 <span class="btn btn-sm btn-static rounded-pill" style="border-color: @statusBtnColor; color: @statusBtnColor;">
@@ -111,7 +98,7 @@
         </div>
     </div>
 
-    @if (isRejected) //sekcja wyswietlajaca powod odrzucenia poradnika
+    @if (isRejected)
     {
         <div class="alert alert-neon alert-neon-danger mb-4" style="--alert-color: var(--neon-orange); border-left-color: var(--neon-orange);">
             <div class="d-flex align-items-start">
@@ -127,8 +114,6 @@
     }
 
     <div class="guide-panel-base guide-split-header @statusBorderClass">
-        @* naglowek z tlem i informacjami o autorze *@
-
         <div class="guide-header-bg" style="background-image: url('@bgImageUrl');"></div>
         <div class="header-overlay"></div>
 
@@ -170,7 +155,6 @@
     </div>
 
     <div class="guide-panel-base guide-split-content @statusBorderClass">
-        @* glowna sekcja z trescia poradnika *@
         <div class="guide-content-body">
             @if (!string.IsNullOrEmpty(Model.Guide.Content))
             {
@@ -185,7 +169,7 @@
             }
         </div>
 
-        @if ((!isDeleted && (isAuthor || isAdminOrMod)) || (isDeleted && isAdminOrMod)) //przyciski edycji i usuwania poradnika
+        @if ((!isDeleted && (isAuthor || isAdminOrMod)) || (isDeleted && isAdminOrMod))
         {
             <div class="guide-action-footer" style="justify-content: center; gap: 15px;">
                 <a asp-action="Edit" asp-route-id="@Model.Guide.Id" class="btn btn-neon-yellow btn-sm px-4">
@@ -194,27 +178,35 @@
 
                 @if (isDeleted)
                 {
+                    // PRZYPADEK 1: Poradnik jest już w koszu (isAdminOrMod)
                     <form asp-controller="Admin" asp-action="RestoreGuide" method="post" class="d-inline">
                         <input type="hidden" name="id" value="@Model.Guide.Id" />
                         <button type="submit" class="btn btn-neon-green btn-sm px-4">PRZYWRÓĆ</button>
                     </form>
 
-                    <form asp-controller="Admin" asp-action="DeleteGuidePermanently" method="post" class="d-inline">
-                        <input type="hidden" name="id" value="@Model.Guide.Id" />
-                        <button type="submit" class="btn btn-danger-custom btn-sm px-4" onclick="return confirm('UWAGA: Czy na pewno chcesz trwale usunąć ten poradnik? Tej operacji nie można cofnąć.')">
-                            USUŃ NA STAŁE
-                        </button>
-                    </form>
+                    <button type="button" class="btn btn-danger-custom btn-sm px-4" onclick="openDeletePermModal()">
+                        USUŃ NA STAŁE
+                    </button>
+                }
+                else if (isApproved)
+                {
+                    // PRZYPADEK 2: Poradnik opublikowany -> Do kosza (Soft Delete)
+                    <button type="button" class="btn btn-danger-custom btn-sm px-4" onclick="openSoftDeleteModal()">
+                        DO KOSZA
+                    </button>
                 }
                 else
                 {
-                    <button class="btn btn-danger-custom btn-sm px-4" onclick="return confirm('Przenieść do kosza?')">USUŃ</button>
+                    // PRZYPADEK 3: Szkic / Odrzucony / Oczekujący -> Usuń trwale (Hard Delete)
+                    <button type="button" class="btn btn-danger-custom btn-sm px-4" onclick="openDeletePermModal()">
+                        USUŃ
+                    </button>
                 }
             </div>
         }
     </div>
 
-    @if (isPending && isAdminOrMod) //panel decyzyjny dla moderatorow
+    @if (isPending && isAdminOrMod)
     {
         <div class="glass-panel border-warning p-4 mb-5 text-center" style="border-color: var(--neon-yellow) !important; box-shadow: 0 0 20px color-mix(in srgb, var(--neon-yellow) 15%, transparent) !important;">
             <h4 class="text-neon-warning mb-3">Decyzja Moderacji</h4>
@@ -228,22 +220,19 @@
         </div>
     }
 
-    @if (isApproved) //interakcje oceny i system komentarzy dostepny po akceptacji
+    @if (isApproved)
     {
         <div class="glass-panel text-center p-4 mb-5 d-flex flex-column justify-content-center align-items-center position-relative" style="min-height: 120px;">
-
-            @if (User.Identity.IsAuthenticated) //formularz oceniania poradnika
+            @if (User.Identity.IsAuthenticated)
             {
                 @Html.AntiForgeryToken()
                 <input type="hidden" id="guideId" value="@Model.Guide.Id" />
                 <input type="hidden" id="currentRating" value="@Model.UserRating" />
 
                 <div class="d-flex justify-content-center align-items-center gap-3">
-
                     <span class="text-uppercase fw-bold" style="font-size: 1.2rem; letter-spacing: 2px; color: var(--white); text-shadow: 0 0 10px rgba(255,255,255,0.5);">
                         TWOJA OCENA:
                     </span>
-
                     <div id="star-container" class="d-flex gap-1" style="font-size: 2.2rem; cursor: pointer; line-height: 1;">
                         <i class="far fa-star guide-star-custom" data-value="1"></i>
                         <i class="far fa-star guide-star-custom" data-value="2"></i>
@@ -251,14 +240,11 @@
                         <i class="far fa-star guide-star-custom" data-value="4"></i>
                         <i class="far fa-star guide-star-custom" data-value="5"></i>
                     </div>
-
                     <div class="text-white fw-bold d-flex align-items-baseline" style="font-size: 1.8rem; line-height: 1;">
                         <span id="rating-display" style="text-shadow: 0 0 10px var(--neon-purple);">@Model.UserRating.ToString("0.0")</span>
                         <span style="font-size: 1rem; color: #aaa; margin-left: 5px;">/ 5.0</span>
                     </div>
-
                 </div>
-
                 <div id="save-message" class="text-neon-green small opacity-0 transition-opacity position-absolute" style="bottom: 15px;">
                     <i class="bi bi-check-lg"></i> DANE ZAPISANE
                 </div>
@@ -275,7 +261,7 @@
                     Komentarze <span class="text-muted fs-6">(@Model.Comments.Count)</span>
                 </h4>
 
-                @if (User.Identity.IsAuthenticated) //formularz dodawania nowego komentarza
+                @if (User.Identity.IsAuthenticated)
                 {
                     <div class="mb-4">
                         <form asp-action="AddComment" method="post">
@@ -293,7 +279,7 @@
                     </div>
                 }
 
-                @if (Model.Comments.Any()) //wyswietlanie listy wszystkich komentarzy
+                @if (Model.Comments.Any())
                 {
                     <div class="d-flex flex-column gap-3">
                         @foreach (var comment in Model.Comments)
@@ -306,7 +292,7 @@
 
                             string mainRoleColor = GetRoleColor(comment.Author?.Role);
 
-                            string avatarUrl; //logika pobierania avatara z bazy lub domyslnego pliku
+                            string avatarUrl;
                             if (comment.Author?.ProfilePicture != null)
                             {
                                 avatarUrl = Url.Action("GetAvatar", "Profile", new { id = comment.Author.Id }) + "?v=" + DateTime.Now.Ticks;
@@ -319,13 +305,11 @@
                             <div class="p-3 rounded" style="background-color: rgba(0,0,0,0.3); border: 1px solid var(--border-tech);">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <div class="d-flex align-items-center gap-3">
-
                                         <img src="@avatarUrl"
                                              class="rounded-circle"
                                              alt="@comment.Author?.UserName"
                                              style="width: 40px; height: 40px; object-fit: cover; border: 2px solid @mainRoleColor; box-shadow: 0 0 10px color-mix(in srgb, @mainRoleColor 30%, transparent);"
                                              onerror="this.src='/uploads/avatars/default_avatar.png'" />
-
                                         <div>
                                             <div class="fw-bold" style="color: @mainRoleColor; text-shadow: 0 0 5px @mainRoleColor;">
                                                 @comment.Author?.UserName
@@ -333,7 +317,6 @@
                                             <div class="text-muted" style="font-size: 0.7rem;">@comment.CreatedAt.ToString("g")</div>
                                         </div>
                                     </div>
-
                                     @if (canManageComment)
                                     {
                                         <div class="dropdown">
@@ -354,9 +337,7 @@
                                         </div>
                                     }
                                 </div>
-
                                 <div id="comment-content-@comment.Id" class="mb-3 ps-1 text-light" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.5;">@comment.Content</div>
-
                                 <div id="comment-edit-@comment.Id" class="d-none mb-3">
                                     <form asp-action="EditComment" method="post">
                                         <input type="hidden" name="commentId" value="@comment.Id" />
@@ -370,7 +351,6 @@
                                         </div>
                                     </form>
                                 </div>
-
                                 <div class="d-flex align-items-center gap-3">
                                     <div class="d-flex align-items-center gap-2">
                                         <form asp-action="ToggleReaction" method="post" class="d-inline">
@@ -394,7 +374,6 @@
                                         </button>
                                     }
                                 </div>
-
                                 <div id="reply-form-@comment.Id" class="mt-3 d-none ps-3">
                                     <form asp-action="AddReply" method="post">
                                         <input type="hidden" name="commentId" value="@comment.Id" />
@@ -408,8 +387,7 @@
                                         </div>
                                     </form>
                                 </div>
-
-                                @if (comment.Replies != null && comment.Replies.Any()) //wyswietlanie odpowiedzi do komentarza
+                                @if (comment.Replies != null && comment.Replies.Any())
                                 {
                                     <div class="reply-thread mt-3 ps-3" style="border-left: none !important;">
                                         @foreach (var reply in comment.Replies)
@@ -420,7 +398,6 @@
 
                                             <div class="reply-box mt-2 p-3 rounded position-relative"
                                                  style="background-color: rgba(255, 255, 255, 0.03); border-left: 3px solid @replyRoleColor;">
-
                                                 <div class="d-flex justify-content-between align-items-start mb-1">
                                                     <div class="d-flex align-items-center gap-2">
                                                         <span class="fw-bold small" style="color: @replyRoleColor; text-shadow: 0 0 5px @replyRoleColor;">
@@ -428,7 +405,6 @@
                                                         </span>
                                                         <span class="text-muted" style="font-size: 0.65rem;">@reply.CreatedAt.ToString("dd.MM HH:mm")</span>
                                                     </div>
-
                                                     @if (canManageReply)
                                                     {
                                                         <div class="dropdown">
@@ -449,9 +425,7 @@
                                                         </div>
                                                     }
                                                 </div>
-
                                                 <div id="comment-content-reply-@reply.Id" class="small text-white-50" style="white-space: pre-wrap;">@reply.Content</div>
-
                                                 <div id="reply-edit-@reply.Id" class="d-none mt-2">
                                                     <form asp-action="EditReply" method="post">
                                                         <input type="hidden" name="replyId" value="@reply.Id" />
@@ -482,8 +456,11 @@
     }
 </div>
 
-@if (isAdminOrMod) //modal wyswietlany moderatorowi przy odrzucaniu poradnika
+@* --- MODALE (SYSTEMOWE) --- *@
+
+@if (isAdminOrMod)
 {
+    @* Modal Odrzucania (tylko dla moderatorów) *@
     <div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content modal-neon modal-compact" style="border-color: var(--neon-purple); box-shadow: 0 0 20px color-mix(in srgb, var(--neon-purple) 20%, transparent);">
@@ -494,7 +471,6 @@
                         </h5>
                         <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" style="filter: none; opacity: 0.8;"></button>
                     </div>
-
                     <div class="modal-body pt-3">
                         <input type="hidden" name="id" value="@Model.Guide.Id" />
                         <div class="form-floating">
@@ -502,16 +478,62 @@
                             <label>Wpisz powód odrzucenia / instrukcje...</label>
                         </div>
                     </div>
-
                     <div class="modal-footer border-0 justify-content-center pb-4">
                         <button type="button" class="btn btn-ghost-cancel px-4" data-bs-dismiss="modal">ANULUJ</button>
-                        <button type="submit" class="btn btn-neon-primary px-4">POTWIERDZŚ</button>
+                        <button type="submit" class="btn btn-neon-primary px-4">POTWIERDŹ</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 }
+
+@* Modal Miękkiego Usuwania (Soft Delete) - Przenoszenie do kosza *@
+<div class="modal fade" id="deleteSoftModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-neon modal-compact" style="border-color: var(--neon-red); box-shadow: 0 0 20px color-mix(in srgb, var(--neon-red) 20%, transparent);">
+            <form asp-controller="Guides" asp-action="Delete" method="post">
+                <div class="modal-header border-0 position-relative justify-content-center pt-4 pb-0">
+                    <h5 class="modal-title text-neon-danger text-uppercase fw-bold text-center w-100 m-0"><i class="fas fa-trash me-2"></i> Do kosza</h5>
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-white text-center py-4">
+                    <p class="mb-3 text-muted">Czy chcesz przenieść ten poradnik do kosza?</p>
+                    <h4 class="text-white fw-bold mb-0">@Model.Guide.Title</h4>
+                    <input type="hidden" name="id" value="@Model.Guide.Id" />
+                </div>
+                <div class="modal-footer border-0 justify-content-center pb-4 pt-0 gap-3">
+                    <button type="button" class="btn btn-ghost-cancel px-4" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" class="btn btn-danger-custom px-4">Przenieś</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* Modal Trwałego Usuwania (Hard Delete) - Usuwanie na zawsze *@
+<div class="modal fade" id="deletePermModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-neon modal-compact modal-danger-neon" style="border-color: var(--neon-red);">
+            <form asp-controller="@(isDeleted ? "Admin" : "Guides")" asp-action="@(isDeleted ? "DeleteGuidePermanently" : "DeletePermanently")" method="post">
+                <div class="modal-header border-0 position-relative justify-content-center pt-4 pb-0">
+                    <h5 class="modal-title text-neon-danger text-uppercase fw-bold text-center w-100 m-0"><i class="fas fa-radiation me-2"></i> Usuwanie trwale</h5>
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-white text-center py-4">
+                    <p class="mb-2 text-muted">Tej operacji nie można cofnąć.</p>
+                    <h4 class="fw-bold mb-0 text-white">@Model.Guide.Title</h4>
+                    <input type="hidden" name="id" value="@Model.Guide.Id" />
+                </div>
+                <div class="modal-footer border-0 justify-content-center pb-4 pt-0 gap-3">
+                    <button type="button" class="btn btn-ghost-cancel px-4" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" class="btn btn-danger-custom px-4 fw-bold">Usuń na zawsze</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 
 @section Scripts {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
@@ -543,7 +565,20 @@
     </style>
 
     <script>
-        function toggleEditForm(id) { //funkcja pomocnicza do przelaczania widoku edycji komentarzy i odpowiedzi
+        // Funkcje otwierające modale z przeniesieniem do BODY (Fix z-index)
+        function openSoftDeleteModal() {
+            var modalElement = document.getElementById('deleteSoftModal');
+            document.body.appendChild(modalElement);
+            new bootstrap.Modal(modalElement).show();
+        }
+
+        function openDeletePermModal() {
+            var modalElement = document.getElementById('deletePermModal');
+            document.body.appendChild(modalElement);
+            new bootstrap.Modal(modalElement).show();
+        }
+
+        function toggleEditForm(id) {
             var form = document.getElementById(id);
             var contentId;
             if(id.startsWith('reply-edit-')) {
@@ -570,7 +605,7 @@
             return url;
         }
 
-        document.addEventListener("DOMContentLoaded", function() { //inicjalizacja map interaktywnych w tresci poradnika
+        document.addEventListener("DOMContentLoaded", function() {
             var mapImages = document.querySelectorAll('img.interactive-map-source');
             mapImages.forEach(function(img) {
                 var rawUrl = img.getAttribute('data-origin-src') || img.getAttribute('src');
@@ -617,7 +652,7 @@
                 };
             });
 
-            const starContainer = document.getElementById('star-container'); //logika obslugi systemu oceniania (gwiazdki)
+            const starContainer = document.getElementById('star-container');
             if (starContainer) {
                 const stars = starContainer.querySelectorAll('.guide-star-custom');
                 const display = document.getElementById('rating-display');
